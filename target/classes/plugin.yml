@@ -1,0 +1,8 @@
+name: RealEstate
+main: org.micoli.minecraft.realEstate.RealEstate
+version: 0.1
+description:
+softdepend: [Vault]
+commands:
+    realEstate:
+      description: main command 
