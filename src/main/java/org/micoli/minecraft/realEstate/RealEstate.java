@@ -4,7 +4,10 @@ import static com.sk89q.worldguard.bukkit.BukkitUtil.toVector;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -14,6 +17,7 @@ import net.milkbowl.vault.permission.Permission;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.Plugin;
@@ -28,6 +32,8 @@ import org.micoli.minecraft.realEstate.managers.QDCommandManager;
 import org.micoli.minecraft.utils.ChatFormater;
 import org.micoli.minecraft.utils.ServerLogger;
 
+import com.avaje.ebean.EbeanServer;
+import com.lennardf1989.bukkitex.MyDatabase;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.Vector;
@@ -40,7 +46,6 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.databases.ProtectionDatabaseException;
-import com.sk89q.worldguard.protection.databases.RegionDBUtil;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
@@ -60,6 +65,7 @@ public class RealEstate extends JavaPlugin implements ActionListener {
 	public static Chat vaultChat = null;
 	private WorldGuardPlugin wg;
 	private WorldEditPlugin we;
+	private static MyDatabase database;
 
 	/**
 	 * @return the instance
@@ -120,9 +126,59 @@ public class RealEstate extends JavaPlugin implements ActionListener {
 		setupEconomy();
 		wg = getWorldGuard();
 		we = getWorldEdit();
-
+		loadConfiguration();
+		initializeDatabase();
 		log(ChatFormater.format("%s version enabled", pdfFile.getName(), pdfFile.getVersion()));
 		listRegions();
+		
+		/*
+		QDObjectRealEstate a = new QDObjectRealEstate();
+		a.setId("parcel2");
+		a.setWorld("aaaaaaaaab");
+		a.setPlayerOwner("playerOwner");
+		database.getDatabase().save(a);
+		*/
+		Iterator<QDObjectRealEstate> iter = database.getDatabase().find(QDObjectRealEstate.class).findList().iterator();
+		while( iter.hasNext()) {
+			QDObjectRealEstate re = iter.next();
+			ServerLogger.log("==>%s",re.getWorld());
+		}
+	}
+
+	private void loadConfiguration() {
+		FileConfiguration config = getConfig();
+
+		config.set("database.driver", config.getString("database.driver", "org.sqlite.JDBC"));
+		config.set("database.url", config.getString("database.url", "jdbc:sqlite:{DIR}{NAME}.db"));
+		config.set("database.username", config.getString("database.username", "root"));
+		config.set("database.password", config.getString("database.password", ""));
+		config.set("database.isolation", config.getString("database.isolation", "SERIALIZABLE"));
+		config.set("database.logging", config.getBoolean("database.logging", false));
+		config.set("database.rebuild", config.getBoolean("database.rebuild", true));
+
+		saveConfig();
+	}
+
+	@Override
+	public EbeanServer getDatabase() {
+		return database.getDatabase();
+	}
+
+	private void initializeDatabase() {
+		FileConfiguration config = getConfig();
+
+		database = new MyDatabase(this) {
+			protected java.util.List<Class<?>> getDatabaseClasses() {
+				List<Class<?>> list = new ArrayList<Class<?>>();
+				list.add(QDObjectRealEstate.class);
+				return list;
+			};
+		};
+
+		database.initializeDatabase(config.getString("database.driver"), config.getString("database.url"), config.getString("database.username"), config.getString("database.password"), config.getString("database.isolation"), config.getBoolean("database.logging", false), config.getBoolean("database.rebuild", true));
+
+		config.set("database.rebuild", false);
+		saveConfig();
 	}
 
 	private WorldGuardPlugin getWorldGuard() {
