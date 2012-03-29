@@ -1,0 +1,25 @@
+>>help
+
+>>region management
+overload /region for easy estate manipulation
+
+>> /list
+
+>>/list __state__
+list all parcels without owner
+
+>> /list <player>
+
+>> /sell <parcelname> <price>
+
+>>/cancelsell <parcelname>
+
+>>/buy <parcelname>
+<parcel> must be on sale
+
+>>/tp <parcelname>
+you must be the owner of the parcel
+
+
+>>/tp <parcelname> <player>
+you must be the owner of the parcel
