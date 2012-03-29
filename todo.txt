@@ -2,6 +2,8 @@
 
 >>region management
 overload /region for easy estate manipulation
+/convert <region><parcel><price>
+/unconvert <parcel>
 
 >> /list
 
