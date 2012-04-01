@@ -1,8 +1,8 @@
-name: RealEstate
-main: org.micoli.minecraft.realEstate.RealEstate
-version: 0.1
+name: LocalPlan
+main: org.micoli.minecraft.localPlan.LocalPlan
+version: 0.2
 description:
 softdepend: [Vault]
 commands:
-    realEstate:
+    re:
       description: main command 
