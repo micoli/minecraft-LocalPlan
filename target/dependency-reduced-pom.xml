@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.micoli.minecraft</groupId>
-  <artifactId>minecraft-LocalPlan</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <artifactId>morg-LocalPlan</artifactId>
+  <version>0.1.1-SNAPSHOT</version>
   <scm>
-    <connection>scm:git:https://github.com/micoli/minecraft-WebAuctionsAndStore.git</connection>
-    <developerConnection>scm:git:https://github.com/micoli/minecraft-WebAuctionsAndStore.git</developerConnection>
-    <url>https://github.com/micoli/minecraft-WebAuctionsAndStore.git</url>
+    <connection>scm:git:https://github.com/micoli/minecraft-RealEstate.git</connection>
+    <developerConnection>scm:git:https://github.com/micoli/minecraft-RealEstate.git</developerConnection>
+    <url>https://github.com/micoli/minecraft-RealEstate.git</url>
   </scm>
   <build>
     <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
@@ -27,6 +27,13 @@
         <version>2.12</version>
         <configuration>
           <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>true</downloadJavadocs>
         </configuration>
       </plugin>
       <plugin>
@@ -142,7 +149,7 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>craftbukkit</artifactId>
-      <version>1.2.3-R0.1-SNAPSHOT</version>
+      <version>1.2.4-R0.1-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

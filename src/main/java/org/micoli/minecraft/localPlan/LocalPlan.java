@@ -15,6 +15,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -23,6 +24,7 @@ import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.localPlan.entities.Parcel;
 import org.micoli.minecraft.localPlan.entities.Parcel.parcelStatus;
 import org.micoli.minecraft.localPlan.managers.QDCommandManager;
+import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
 import org.micoli.minecraft.utils.ServerLogger;
 
@@ -47,7 +49,6 @@ import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class LocalPlan.
  */
@@ -62,12 +63,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The internal array of parcels. */
 	public static Map<String, Parcel> aParcel;
 
-	/** The wg. */
+	/** The worldguard plugin. */
 	private WorldGuardPlugin wg;
 
-	/** The we. */
+	/** The worldedit plugin. */
 	private WorldEditPlugin we;
-
+	
+	private HashMap<String,List<Block>> previewBlocks = new HashMap<String,List<Block>>();
 	/**
 	 * Gets the single instance of LocalPlan.
 	 * 
@@ -102,7 +104,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	private WorldEditPlugin getWorldEdit() {
 		Plugin plugin = getServer().getPluginManager().getPlugin("WorldEdit");
 
-		ServerLogger.log("plugins %s", plugin.toString());
+		//ServerLogger.log("plugins %s", plugin.toString());
 
 		if (plugin == null || !(plugin instanceof WorldEdit)) {
 			Plugin[] plugs = getServer().getPluginManager().getPlugins();
@@ -110,7 +112,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			for (t = 0; t < plugs.length; t++) {
 				ServerLogger.log("plugins : [%s]", plugs[t].getName());
 				if (plugs[t].getName().trim().equalsIgnoreCase("WorldEdit")) {
-					ServerLogger.log("plugins found [%s]", plugs[t].getName());
+					//ServerLogger.log("plugins found [%s]", plugs[t].getName());
 					plugin = plugs[t];
 					break;
 				}
@@ -150,7 +152,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		aParcel = new HashMap<String, Parcel>();
 		instance = this;
 		myExecutor = new QDCommandManager(this);
-		commandString = "re";
+		commandString = "lp";
 		getCommand(getCommandString()).setExecutor(myExecutor);
 
 		wg = getWorldGuard();
@@ -159,7 +161,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		initializeDatabase();
 
 		ServerLogger.log("Parcels list");
-		Iterator<Parcel> iter = database.getDatabase().find(Parcel.class).findList().iterator();
+		Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).findList().iterator();
 		while (iter.hasNext()) {
 			Parcel re = iter.next();
 			ServerLogger.log("[%s] %s", re.getWorld(), re.getId());
@@ -222,7 +224,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 
 		// todo revoir l'ordre des resultats pour les alignements
-		Iterator<Parcel> iter = database.getDatabase().find(Parcel.class).where().like("playerOwner", ownerArg).like("status", statusArg).orderBy("id desc").findList().iterator();
+		Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).where().like("playerOwner", ownerArg).like("status", statusArg).orderBy("id desc").findList().iterator();
 
 		if (iter.hasNext()) {
 			sendComments(player, ChatFormater.format("List of owned parcels"));
@@ -242,7 +244,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	public void initalizeRegions() {
 		final int maxdepth = 10;
 		for (World w : getServer().getWorlds()) {
-			Map<?, Parcel> allregions = database.getDatabase().find(Parcel.class).where().like("world", w.getName()).orderBy("id asc").findMap();
+			Map<?, Parcel> allregions = getStaticDatabase().find(Parcel.class).where().like("world", w.getName()).orderBy("id asc").findMap();
 			ServerLogger.log("Map %s (%d)", w.getName(), allregions.size());
 
 			RegionManager rm = wg.getRegionManager(w);
@@ -270,13 +272,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 						parcel.setPlayerOwner("__state__");
 						parcel.setStatus(Parcel.parcelStatus.FREE);
 
-						database.getDatabase().save(parcel);
+						parcel.save();
 						ServerLogger.log("Automatically adding %s[%s]=>%s", w.getName(), pr.getId(), pr.getOwners().toPlayersString());
 					} else {
 						Parcel parcel = allregions.get(pr.getId());
 						if (parcel.getSurface() != pr.volume() / 256) {
 							parcel.setSurface(pr.volume() / 256);
-							database.getDatabase().save(parcel);
+							parcel.save();
 							ServerLogger.log("updating surface of  %s[%s]=>%d", w.getName(), pr.getId(), parcel.getSurface());
 						}
 					}
@@ -370,8 +372,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			parcel.setStatus(Parcel.parcelStatus.FREE);
 			parcel.setSurface(region.volume() / 256);
 
-			database.getDatabase().save(parcel);
-
+			parcel.save();
+			
 			try {
 				mgr.save();
 				sendComments(player, ChatColor.YELLOW + "Region saved as " + id + ".", false);
@@ -454,23 +456,11 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		if (region != null) {
 			final BlockVector min = region.getMinimumPoint();
 			final BlockVector max = region.getMaximumPoint();
-			Location dstLocation = new Location(w, (double) (min.getBlockX() + max.getBlockX()) / 2, w.getMaxHeight() - 1, (double) (min.getBlockZ() + max.getBlockZ()) / 2);
-			while (w.getBlockAt(dstLocation).getType().getId() == 0) {
-				dstLocation = dstLocation.subtract(0, 1, 0);
-			}
-			dstLocation = dstLocation.add(0, 1, 0);
+			Location dstLocation = BlockUtils.getTopPositionAtPos(new Location(w, (double) (min.getBlockX() + max.getBlockX()) / 2, (double) 0, (double) (min.getBlockZ() + max.getBlockZ()) / 2));
 			player.teleport(dstLocation);
 		}
 	}
 
-	public void setMaterialOnTop(World world, BlockVector2D point, Material material) {
-		Location dstLocation = new Location(world, point.getX(), 256, point.getZ());
-		while (world.getBlockAt(dstLocation).getType().getId() == 0) {
-			dstLocation = dstLocation.subtract(0, 1, 0);
-		}
-		dstLocation = dstLocation.add(0, 1, 0);
-		world.getBlockAt(dstLocation).setType(material);
-	}
 
 	/**
 	 * Allocate parcel.
@@ -483,7 +473,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the new owner
 	 */
 	public void allocateParcel(Player player, String parcelName, String newOwner) {
-		Parcel parcel = database.getDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
@@ -498,8 +488,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 		parcel.setPlayerOwner(newOwner);
 		parcel.setStatus(Parcel.parcelStatus.OWNED);
-		database.getDatabase().save(parcel);
-
+		parcel.save();
+		
 		sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
 	}
 
@@ -514,7 +504,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the price string
 	 */
 	public void setBuyable(Player player, String parcelName, String priceString) {
-		Parcel parcel = database.getDatabase().find(Parcel.class).where().eq("id", parcelName).eq("playerOwner", player.getName()).findUnique();
+		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).eq("playerOwner", player.getName()).findUnique();
 		if (parcel == null) {
 			sendComments(player, "Parcel not found or doesn't belong to you");
 			return;
@@ -527,7 +517,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		double price = scanner.nextDouble();
 		parcel.setPrice(price);
 		parcel.setStatus(Parcel.parcelStatus.OWNED_BUYABLE);
-		database.getDatabase().save(parcel);
+		parcel.save();
 		sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
 	}
 
@@ -540,13 +530,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the parcel name
 	 */
 	public void setUnbuyable(Player player, String parcelName) {
-		Parcel parcel = database.getDatabase().find(Parcel.class).where().eq("id", parcelName).eq("playerOwner", player.getName()).findUnique();
+		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).eq("playerOwner", player.getName()).findUnique();
 		if (parcel == null) {
 			sendComments(player, "Parcel not found or doesn't belong to you");
 			return;
 		}
 		parcel.setStatus(Parcel.parcelStatus.OWNED);
-		database.getDatabase().save(parcel);
+		parcel.save();
 		sendComments(player, ChatFormater.format("Parcel %s is now unbuyable ", parcelName));
 	}
 
@@ -559,7 +549,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the parcel name
 	 */
 	public void buyParcel(Player player, String parcelName) {
-		Parcel parcel = database.getDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
@@ -591,7 +581,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	public void manageParcelMember(Player player, String[] args) {
 		String parcelName = args[1];
-		Parcel parcel = database.getDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
@@ -605,23 +595,80 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	}
 
+
 	public void showParcel(Player player, String parcelName) {
-		Parcel parcel = database.getDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
 		}
-		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))){
+		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
 			sendComments(player, "You don't have right on that Parcel");
 			return;
 		}
+		if(previewBlocks.containsKey(parcel.getId())){
+			sendComments(player, "Parcel preview already shown");
+			return;
+		}
+		List<Block> listBlock = new ArrayList<Block>();
+		previewBlocks.put(parcel.getId(),listBlock);
 		RegionManager mgr = wg.getGlobalRegionManager().get(getServer().getWorld(parcel.getWorld()));
 		ProtectedRegion region = mgr.getRegion(parcel.getId());
 		
-		Iterator<BlockVector2D> pointIterator = region.getPoints().iterator();
-		while(pointIterator.hasNext()){
-			BlockVector2D point = pointIterator.next();
-			setMaterialOnTop(getServer().getWorld(parcel.getWorld()),point,Material.FENCE);
+		int nb = 0;
+		World world = getServer().getWorld(parcel.getWorld());
+		List<BlockVector2D> points = region.getPoints();
+		if (points!=null && points.size()>0){
+			BlockVector2D firstPoint = points.get(0);
+			BlockVector2D lastPoint = points.get(points.size()-1);
+			if (region.getTypeName().equalsIgnoreCase("cuboid")){
+				lastPoint = points.get(2);
+				points.set(2,points.get(3));
+				points.set(3,lastPoint);
+			}
+			for(int i = 0; i < points.size(); i++) {
+				if (nb == 0) {
+					firstPoint = points.get(i);
+					lastPoint = firstPoint;
+				} else {
+					BlockVector2D point = points.get(i);//pointIterator.next();
+					BlockUtils.drawLineOnTop(new Location(world,lastPoint.getX(), 0, lastPoint.getZ()), new Location(world, point.getX(), 0, point.getZ()), Material.FENCE,listBlock);
+					//sendComments(player, ChatFormater.format("Point %f,%f", point.getX(), point.getZ()));
+					lastPoint = point;
+				}
+				nb++;
+			}
+			//sendComments(player, ChatFormater.format("Point %f,%f", firstPoint.getX(), firstPoint.getZ()));
+			BlockUtils.drawLineOnTop(new Location(world,lastPoint.getX(), 0, lastPoint.getZ()), new Location(world, firstPoint.getX(), 0, firstPoint.getZ()), Material.FENCE,listBlock);
+			sendComments(player, "Parcel shown");
 		}
 	}
+
+	public void hideParcel(Player player, String parcelName) {
+		Parcel parcel = Parcel.getParcel(parcelName);
+		if (parcel == null) {
+			sendComments(player, "Parcel not found");
+			return;
+		}
+		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+			sendComments(player, "You don't have right on that Parcel");
+			return;
+		}
+		if(!previewBlocks.containsKey(parcel.getId())){
+			sendComments(player, "Parcel preview already shown");
+			return;
+		}
+		World world = getServer().getWorld(parcel.getWorld());
+		List<Block> listBlock = previewBlocks.get(parcel.getId());
+		for (Iterator<Block> pointIterator = listBlock.iterator(); pointIterator.hasNext();) {
+			Block block = pointIterator.next();
+			world.getBlockAt(block.getLocation()).setTypeId(0);
+		}
+		sendComments(player, "Parcel hided");
+	}
+
+	public Parcel getParcel(ProtectedRegion region) {
+		return Parcel.getParcel(region.getId());
+	}
+
 }

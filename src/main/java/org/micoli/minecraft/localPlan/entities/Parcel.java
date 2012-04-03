@@ -190,4 +190,12 @@ public class Parcel {
 		this.surface = surface;
 	}
 
+	public static Parcel getParcel(String parcelName) {
+		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+	}
+
+	public void save() {
+		LocalPlan.getStaticDatabase().save(this);
+	}
+
 }
