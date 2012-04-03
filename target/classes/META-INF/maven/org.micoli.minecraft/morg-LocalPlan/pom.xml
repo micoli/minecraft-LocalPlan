@@ -27,20 +27,15 @@
 		</repository>
 	</repositories>
 	<scm>
-		<connection>scm:git:https://github.com/micoli/minecraft-RealEstate.git</connection>
-		<developerConnection>scm:git:https://github.com/micoli/minecraft-RealEstate.git</developerConnection>
-		<url>https://github.com/micoli/minecraft-RealEstate.git</url>
+		<connection>scm:git:https://github.com/micoli/minecraft-LocalPlan.git</connection>
+		<developerConnection>scm:git:https://github.com/micoli/minecraft-LocalPlan.git</developerConnection>
+		<url>https://github.com/micoli/minecraft-LocalPlan.git</url>
 	</scm>
 	<dependencies>
 		<dependency>
 			<groupId>com.lennardf1989</groupId>
 			<artifactId>bukkitex</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>com.sk89q</groupId>
-			<artifactId>worldedit</artifactId>
-			<version>5.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.micoli.minecraft</groupId>
@@ -56,6 +51,11 @@
 			<groupId>net.milkbowl.vault</groupId>
 			<artifactId>Vault</artifactId>
 			<version>1.2.14-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sk89q</groupId>
+			<artifactId>worldedit</artifactId>
+			<version>5.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sk89q</groupId>
@@ -118,8 +118,6 @@
 							<addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
 							<addDefaultImplementationEntries>false</addDefaultImplementationEntries>
 						</manifest>
-						<!-- <manifestEntries> <Class-Path>utils-0.0.1-SNAPSHOT.jar</Class-Path> 
-							</manifestEntries> -->
 					</archive>
 				</configuration>
 			</plugin>

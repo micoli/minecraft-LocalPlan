@@ -5,9 +5,9 @@
   <artifactId>morg-LocalPlan</artifactId>
   <version>0.1.1-SNAPSHOT</version>
   <scm>
-    <connection>scm:git:https://github.com/micoli/minecraft-RealEstate.git</connection>
-    <developerConnection>scm:git:https://github.com/micoli/minecraft-RealEstate.git</developerConnection>
-    <url>https://github.com/micoli/minecraft-RealEstate.git</url>
+    <connection>scm:git:https://github.com/micoli/minecraft-LocalPlan.git</connection>
+    <developerConnection>scm:git:https://github.com/micoli/minecraft-LocalPlan.git</developerConnection>
+    <url>https://github.com/micoli/minecraft-LocalPlan.git</url>
   </scm>
   <build>
     <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
@@ -141,12 +141,6 @@
   </repositories>
   <dependencies>
     <dependency>
-      <groupId>com.sk89q</groupId>
-      <artifactId>worldedit</artifactId>
-      <version>5.3-SNAPSHOT</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>craftbukkit</artifactId>
       <version>1.2.4-R0.1-SNAPSHOT</version>
@@ -156,6 +150,12 @@
       <groupId>net.milkbowl.vault</groupId>
       <artifactId>Vault</artifactId>
       <version>1.2.14-SNAPSHOT</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sk89q</groupId>
+      <artifactId>worldedit</artifactId>
+      <version>5.3-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

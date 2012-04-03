@@ -2,7 +2,6 @@ package org.micoli.minecraft.localPlan;
 
 import static com.sk89q.worldguard.bukkit.BukkitUtil.toVector;
 
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,7 +54,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/** The my executor. */
-	private QDCommandManager myExecutor;
+	protected QDCommandManager executor;
 
 	/** The instance. */
 	private static LocalPlan instance;
@@ -69,7 +68,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The worldedit plugin. */
 	private WorldEditPlugin we;
 	
+	/** The preview blocks. */
 	private HashMap<String,List<Block>> previewBlocks = new HashMap<String,List<Block>>();
+	
 	/**
 	 * Gets the single instance of LocalPlan.
 	 * 
@@ -77,6 +78,36 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	public static LocalPlan getInstance() {
 		return instance;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.micoli.minecraft.bukkit.QDBukkitPlugin#onEnable()
+	 */
+	@Override
+	public void onEnable() {
+		super.onEnable();
+		log(ChatFormater.format("%s version enabled", this.pdfFile.getName(), this.pdfFile.getVersion()));
+		aParcel			= new HashMap<String, Parcel>();
+		instance		= this;
+		executor		= new QDCommandManager(this);
+		commandString	= "lp";
+		getCommand(getCommandString()).setExecutor(executor);
+
+		wg = getWorldGuard();
+		we = getWorldEdit();
+		loadConfiguration();
+		initializeDatabase();
+
+		ServerLogger.log("Parcels list");
+		Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).findList().iterator();
+		while (iter.hasNext()) {
+			Parcel re = iter.next();
+			ServerLogger.log("[%s] %s", re.getWorld(), re.getId());
+		}
+		ServerLogger.log("Parcels list end");
+		initalizeRegions();
 	}
 
 	/**
@@ -140,45 +171,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		return list;
 	};
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.micoli.minecraft.bukkit.QDBukkitPlugin#onEnable()
-	 */
-	@Override
-	public void onEnable() {
-		super.onEnable();
-		log(ChatFormater.format("%s version enabled", this.pdfFile.getName(), this.pdfFile.getVersion()));
-		aParcel = new HashMap<String, Parcel>();
-		instance = this;
-		myExecutor = new QDCommandManager(this);
-		commandString = "lp";
-		getCommand(getCommandString()).setExecutor(myExecutor);
-
-		wg = getWorldGuard();
-		we = getWorldEdit();
-		loadConfiguration();
-		initializeDatabase();
-
-		ServerLogger.log("Parcels list");
-		Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).findList().iterator();
-		while (iter.hasNext()) {
-			Parcel re = iter.next();
-			ServerLogger.log("[%s] %s", re.getWorld(), re.getId());
-		}
-		ServerLogger.log("Parcels list end");
-		initalizeRegions();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.micoli.minecraft.bukkit.QDBukkitPlugin#actionPerformed(java.awt.event
-	 * .ActionEvent)
-	 */
-	public void actionPerformed(ActionEvent event) {
-	}
+	
 
 	/**
 	 * Block break.
@@ -596,6 +589,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 
+	/**
+	 * Show parcel.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 */
 	public void showParcel(Player player, String parcelName) {
 		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
 		if (parcel == null) {
@@ -644,6 +643,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 	}
 
+	/**
+	 * Hide parcel.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 */
 	public void hideParcel(Player player, String parcelName) {
 		Parcel parcel = Parcel.getParcel(parcelName);
 		if (parcel == null) {
@@ -667,6 +672,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		sendComments(player, "Parcel hided");
 	}
 
+	/**
+	 * Gets the parcel.
+	 *
+	 * @param region the region
+	 * @return the parcel
+	 */
 	public Parcel getParcel(ProtectedRegion region) {
 		return Parcel.getParcel(region.getId());
 	}

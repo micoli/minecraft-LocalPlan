@@ -10,7 +10,7 @@
 	<files>
 		<file>
 			<source>${project.build.directory}/${artifactId}-${project.version}.jar</source>
-			<destName>QDQuidditchBall.jar</destName>
+			<destName>${artifactId}.jar</destName>
 			<outputDirectory>/</outputDirectory>
 			<filtered>true</filtered>
 		</file>
