@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.bukkit.entity.Player;
 import org.micoli.minecraft.localPlan.LocalPlan;
 
 import com.avaje.ebean.annotation.EnumValue;
@@ -50,7 +51,13 @@ public class Parcel {
 	
 	/** The id. */
 	@Id
+	@Length(max = 200)
 	private String id;
+
+	/** The regionId. */
+	@NotNull
+	@Length(max = 100)
+	private String regionId;
 
 	/** The world. */
 	@NotNull
@@ -190,12 +197,27 @@ public class Parcel {
 		this.surface = surface;
 	}
 
-	public static Parcel getParcel(String parcelName) {
-		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+	public String getRegionId() {
+		return regionId;
+	}
+
+	public void setRegionId(String regionId) {
+		this.regionId = regionId;
 	}
 
 	public void save() {
 		LocalPlan.getStaticDatabase().save(this);
 	}
 
+	public static Parcel getParcel(String world, String parcelName) {
+		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", world+"::"+parcelName).findUnique();
+	}
+
+	public static Parcel getParcel(String world, String parcelName, Player player) {
+		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId",parcelName).eq("playerOwner",player.getName()).findUnique();
+	}
+
+	public void delete() {
+		LocalPlan.getStaticDatabase().delete(this);
+	}
 }

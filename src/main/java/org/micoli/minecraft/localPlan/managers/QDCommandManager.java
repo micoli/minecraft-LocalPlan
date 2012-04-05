@@ -50,13 +50,14 @@ public final class QDCommandManager implements CommandExecutor {
 		final String cmd_member = "member";
 		final String cmd_show = "show";
 		final String cmd_hide = "hide";
+		final String cmd_scan = "scan";
 		
 		try {
 			if (sender instanceof Player) {
 				Player player = (Player) sender;
 				if (command.getName().equalsIgnoreCase(LocalPlan.getCommandString()))
 					if (args.length > 0) {
-						LocalPlan.log("Command " + args[1]);
+						LocalPlan.log("Command " + args[0]);
 						if (args[0].equalsIgnoreCase(cmd_commentsOn)) {
 							LocalPlan.setComments(player, true);
 						} else if (args[0].equalsIgnoreCase(cmd_commentsOff)) {
@@ -80,13 +81,15 @@ public final class QDCommandManager implements CommandExecutor {
 						} else if (args[0].equalsIgnoreCase(cmd_define)) {
 							plugin.createParcel(player, args[1]);
 						} else if (args[0].equalsIgnoreCase(cmd_allocate)) {
-							plugin.allocateParcel(player, args[1], args[2]);
+							plugin.allocateParcel(player, player.getWorld().getName(), args[1], args[2]);
 						} else if (args[0].equalsIgnoreCase(cmd_member)) {
 							plugin.manageParcelMember(player, args);
 						} else if (args[0].equalsIgnoreCase(cmd_show)) {
 							plugin.showParcel(player, args[1]);
 						} else if (args[0].equalsIgnoreCase(cmd_hide)) {
 							plugin.hideParcel(player, args[1]);
+						} else if (args[0].equalsIgnoreCase(cmd_scan)) {
+							plugin.initalizeRegions();
 						} else {
 							player.sendMessage(ChatFormater.format("{ChatColor.RED} command unknown"));
 						}

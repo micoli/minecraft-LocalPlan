@@ -17,7 +17,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.Plugin;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.localPlan.entities.Parcel;
@@ -27,6 +26,8 @@ import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
 import org.micoli.minecraft.utils.ServerLogger;
 
+import com.avaje.ebean.Expression;
+import com.avaje.ebean.Query;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.BlockVector2D;
@@ -39,6 +40,7 @@ import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.UnsupportedIntersectionException;
 import com.sk89q.worldguard.protection.databases.ProtectionDatabaseException;
 import com.sk89q.worldguard.protection.flags.DefaultFlag;
 import com.sk89q.worldguard.protection.flags.Flag;
@@ -63,10 +65,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	public static Map<String, Parcel> aParcel;
 
 	/** The worldguard plugin. */
-	private WorldGuardPlugin wg;
+	private WorldGuardPlugin worldGuardPlugin;
 
 	/** The worldedit plugin. */
-	private WorldEditPlugin we;
+	private WorldEditPlugin worldEditPlugin;
 	
 	/** The preview blocks. */
 	private HashMap<String,List<Block>> previewBlocks = new HashMap<String,List<Block>>();
@@ -89,24 +91,25 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	public void onEnable() {
 		super.onEnable();
 		log(ChatFormater.format("%s version enabled", this.pdfFile.getName(), this.pdfFile.getVersion()));
-		aParcel			= new HashMap<String, Parcel>();
-		instance		= this;
-		executor		= new QDCommandManager(this);
-		commandString	= "lp";
+		
+		aParcel				= new HashMap<String, Parcel>();
+		instance			= this;
+		executor			= new QDCommandManager(this);
+		commandString		= "lp";
+		worldGuardPlugin	= getWorldGuard();
+		worldEditPlugin		= getWorldEdit();
 		getCommand(getCommandString()).setExecutor(executor);
 
-		wg = getWorldGuard();
-		we = getWorldEdit();
 		loadConfiguration();
 		initializeDatabase();
 
-		ServerLogger.log("Parcels list");
-		Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).findList().iterator();
-		while (iter.hasNext()) {
-			Parcel re = iter.next();
-			ServerLogger.log("[%s] %s", re.getWorld(), re.getId());
-		}
-		ServerLogger.log("Parcels list end");
+		//ServerLogger.log("Parcels list");
+		//Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).findList().iterator();
+		//while (iter.hasNext()) {
+		//	Parcel re = iter.next();
+		//	ServerLogger.log("[%s]",re.getId());
+		//}
+		//ServerLogger.log("Parcels list end");
 		initalizeRegions();
 	}
 
@@ -135,21 +138,15 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	private WorldEditPlugin getWorldEdit() {
 		Plugin plugin = getServer().getPluginManager().getPlugin("WorldEdit");
 
-		//ServerLogger.log("plugins %s", plugin.toString());
-
 		if (plugin == null || !(plugin instanceof WorldEdit)) {
 			Plugin[] plugs = getServer().getPluginManager().getPlugins();
-			int t = 0;
-			for (t = 0; t < plugs.length; t++) {
-				ServerLogger.log("plugins : [%s]", plugs[t].getName());
+			for (int t = 0; t < plugs.length; t++) {
 				if (plugs[t].getName().trim().equalsIgnoreCase("WorldEdit")) {
-					//ServerLogger.log("plugins found [%s]", plugs[t].getName());
 					plugin = plugs[t];
 					break;
 				}
 			}
 		}
-		ServerLogger.log("plugin found [%s]", plugin.getClass());
 
 		// WorldEdit may not be loaded
 		if (plugin == null || !(plugin instanceof WorldEditPlugin)) {
@@ -170,26 +167,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		list.add(Parcel.class);
 		return list;
 	};
-
-	
-
-	/**
-	 * Block break.
-	 * 
-	 * @param event
-	 *            the event
-	 */
-	public void blockBreak(BlockBreakEvent event) {
-	}
-
-	/**
-	 * Player move.
-	 * 
-	 * @param player
-	 *            the player
-	 */
-	public void playerMove(Player player) {
-	}
 
 	/**
 	 * List parcels.
@@ -217,13 +194,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 
 		// todo revoir l'ordre des resultats pour les alignements
-		Iterator<Parcel> iter = getStaticDatabase().find(Parcel.class).where().like("playerOwner", ownerArg).like("status", statusArg).orderBy("id desc").findList().iterator();
+		Iterator<Parcel> parcelIterator = getStaticDatabase().find(Parcel.class).where().like("playerOwner", ownerArg).like("status", statusArg).orderBy("id desc").findList().iterator();
 
-		if (iter.hasNext()) {
+		if (parcelIterator.hasNext()) {
 			sendComments(player, ChatFormater.format("List of owned parcels"));
-			while (iter.hasNext()) {
-				Parcel re = iter.next();
-				sendComments(player, ChatFormater.format("%5s:%15s:%8s:%8s", re.getWorld(), re.getId(), re.getPlayerOwner(), re.getStatus()));
+			while (parcelIterator.hasNext()) {
+				Parcel re = parcelIterator.next();
+				sendComments(player, ChatFormater.format("%5s:%15s:%8s:%8s", re.getWorld(), re.getRegionId(), re.getPlayerOwner(), re.getStatus()));
 			}
 			sendComments(player, ChatFormater.format("-----------"));
 		} else {
@@ -236,11 +213,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	public void initalizeRegions() {
 		final int maxdepth = 10;
+		ServerLogger.log("InitalizeRegions");
 		for (World w : getServer().getWorlds()) {
-			Map<?, Parcel> allregions = getStaticDatabase().find(Parcel.class).where().like("world", w.getName()).orderBy("id asc").findMap();
-			ServerLogger.log("Map %s (%d)", w.getName(), allregions.size());
+			String worldName = w.getName();
+			List<String> listRegions = new ArrayList<String>();
+			Map<?, Parcel> listParcels = getStaticDatabase().find(Parcel.class).where().like("world", worldName).findMap();
+			ServerLogger.log("Map %s (%d)", worldName, listParcels.size());
 
-			RegionManager rm = wg.getRegionManager(w);
+			RegionManager rm = worldGuardPlugin.getRegionManager(w);
 			if (rm == null)
 				continue;
 
@@ -256,29 +236,42 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 					continue;
 				}
 				if (pr.getId() != "__global__") {
-					ServerLogger.log(" %s[%s]=>%s %d ccc ", w.getName(), pr.getId(), pr.getOwners().toPlayersString(), pr.volume() / 256);
-
-					if (!allregions.containsKey(pr.getId())) {
+					ServerLogger.log("W:%s,P:%s,O:%s,S:%d", worldName, pr.getId(), pr.getOwners().toPlayersString(), pr.volume() / 256);
+					listRegions.add(pr.getId());
+					if (!listParcels.containsKey(worldName+"::"+pr.getId())) {
 						Parcel parcel = new Parcel();
-						parcel.setWorld(w.getName());
-						parcel.setId(pr.getId());
+						parcel.setId(worldName+"::"+pr.getId());
+						parcel.setWorld(worldName);
+						parcel.setRegionId(pr.getId());
 						parcel.setPlayerOwner("__state__");
 						parcel.setStatus(Parcel.parcelStatus.FREE);
-
 						parcel.save();
-						ServerLogger.log("Automatically adding %s[%s]=>%s", w.getName(), pr.getId(), pr.getOwners().toPlayersString());
+
+						ServerLogger.log("Automatically adding %s::%s(%s)", worldName, pr.getId(), pr.getOwners().toPlayersString());
 					} else {
-						Parcel parcel = allregions.get(pr.getId());
+						Parcel parcel = listParcels.get(worldName+"::"+pr.getId());
 						if (parcel.getSurface() != pr.volume() / 256) {
 							parcel.setSurface(pr.volume() / 256);
 							parcel.save();
-							ServerLogger.log("updating surface of  %s[%s]=>%d", w.getName(), pr.getId(), parcel.getSurface());
+						
+							ServerLogger.log("Updating surface of  %s::%s(%d)", worldName, pr.getId(), parcel.getSurface());
 						}
 					}
 				}
 			}
+			ServerLogger.log("List of deleted parcels");
+			Query<?> query = getStaticDatabase().find(Parcel.class);
+			Expression exp = query.getExpressionFactory().in("regionId", listRegions);
+			@SuppressWarnings("unchecked")
+			Iterator<Parcel> listDeletedParcels = (Iterator<Parcel>)query.where().like("world", worldName).not(exp).findList().iterator();
+			while (listDeletedParcels.hasNext()) {
+				Parcel parcel = listDeletedParcels.next();
+				ServerLogger.log("Automatically removing W:%s,P:%s",worldName,parcel.getRegionId());
+				parcel.delete();
+			}
 		}
-
+		ServerLogger.log("EndInitalizeRegions");
+		
 	}
 
 	/**
@@ -292,14 +285,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		World w = player.getWorld();
 		Vector pt = toVector(player.getLocation());
 
-		ApplicableRegionSet set = wg.getRegionManager(w).getApplicableRegions(pt);
+		ApplicableRegionSet set = worldGuardPlugin.getRegionManager(w).getApplicableRegions(pt);
 
 		ServerLogger.log("list %s %s", player.getName(), set.toString());
 		for (ProtectedRegion reg : set) {
 			ServerLogger.log("%s %s", player.getName(), reg.getId());
 		}
 		ServerLogger.log("--list %s", player.getName());
-
 	}
 
 	/**
@@ -310,27 +302,27 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param id
 	 *            the id
 	 */
-	public void createParcel(Player player, String id) {
+	public void createParcel(Player player, String parcelName) {
 		try {
 
-			if (!ProtectedRegion.isValidId(id)) {
+			if (!ProtectedRegion.isValidId(parcelName)) {
 				throw new CommandException("Invalid region ID specified!");
 			}
 
-			if (id.equalsIgnoreCase("__global__")) {
+			if (parcelName.equalsIgnoreCase("__global__")) {
 				throw new CommandException("A region cannot be named __global__");
 			}
 
 			// Attempt to get the player's selection from WorldEdit
-			Selection sel = we.getSelection(player);
+			Selection sel = worldEditPlugin.getSelection(player);
 
 			if (sel == null) {
 				throw new CommandException("Select a region with WorldEdit first.");
 			}
 
 			World w = sel.getWorld();
-			RegionManager mgr = wg.getGlobalRegionManager().get(w);
-			if (mgr.hasRegion(id)) {
+			RegionManager mgr = worldGuardPlugin.getGlobalRegionManager().get(w);
+			if (mgr.hasRegion(parcelName)) {
 				throw new CommandException("That region is already defined. Use redefine instead.");
 			}
 
@@ -339,17 +331,29 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			// Detect the type of region from WorldEdit
 			if (sel instanceof Polygonal2DSelection) {
 				Polygonal2DSelection polySel = (Polygonal2DSelection) sel;
-				region = new ProtectedPolygonalRegion(id, polySel.getNativePoints(), 0, w.getMaxHeight());
+				region = new ProtectedPolygonalRegion(parcelName, polySel.getNativePoints(), 0, w.getMaxHeight());
 			} else if (sel instanceof CuboidSelection) {
 				BlockVector min = sel.getNativeMinimumPoint().toBlockVector();
 				BlockVector max = sel.getNativeMaximumPoint().toBlockVector();
 				min.setY(0);
 				max.setY(w.getMaxHeight());
-				region = new ProtectedCuboidRegion(id, min, max);
+				region = new ProtectedCuboidRegion(parcelName, min, max);
 			} else {
 				throw new CommandException("The type of region selected in WorldEdit is unsupported in WorldGuard!");
 			}
+			List<ProtectedRegion> allregionslist = new ArrayList<ProtectedRegion>(mgr.getRegions().values());
+			List<ProtectedRegion> overlaps;
 
+			try{
+				overlaps = region.getIntersectingRegions(allregionslist);
+				if(!(overlaps == null || overlaps.isEmpty())){
+					throw new CommandException("That region is overlapping an existing one.");
+				}
+			}
+			catch (UnsupportedIntersectionException e)
+			{
+				e.printStackTrace();
+			}
 			// Get the list of region owners
 			DefaultDomain own = new DefaultDomain();
 			own.addPlayer(player.getName());
@@ -359,8 +363,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			mgr.addRegion(region);
 
 			Parcel parcel = new Parcel();
-			parcel.setId(region.getId());
+			parcel.setId(w.getName()+"::"+region.getId());
 			parcel.setWorld(w.getName());
+			parcel.setRegionId(region.getId());
 			parcel.setPlayerOwner("__state__");
 			parcel.setStatus(Parcel.parcelStatus.FREE);
 			parcel.setSurface(region.volume() / 256);
@@ -369,7 +374,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			
 			try {
 				mgr.save();
-				sendComments(player, ChatColor.YELLOW + "Region saved as " + id + ".", false);
+				sendComments(player, ChatColor.YELLOW + "Region saved as " + parcelName + ".", false);
 			} catch (ProtectionDatabaseException e) {
 				throw new CommandException("Failed to write regions: " + e.getMessage());
 			}
@@ -397,7 +402,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @author sk89q
 	 */
 	public <V> void setFlag(ProtectedRegion region, Flag<V> flag, CommandSender sender, String value) throws InvalidFlagFormat {
-		region.setFlag(flag, flag.parseInput(wg, sender, value));
+		region.setFlag(flag, flag.parseInput(worldGuardPlugin, sender, value));
 	}
 
 	/**
@@ -442,10 +447,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param id
 	 *            the id
 	 */
-	public void teleportToParcel(Player player, String id) {
+	public void teleportToParcel(Player player, String parcelName) {
 		World w = player.getWorld();
-		RegionManager rm = wg.getRegionManager(w);
-		ProtectedRegion region = rm.getRegion(id);
+		RegionManager rm = worldGuardPlugin.getRegionManager(w);
+		ProtectedRegion region = rm.getRegion(parcelName);
 		if (region != null) {
 			final BlockVector min = region.getMinimumPoint();
 			final BlockVector max = region.getMaximumPoint();
@@ -465,15 +470,15 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param newOwner
 	 *            the new owner
 	 */
-	public void allocateParcel(Player player, String parcelName, String newOwner) {
-		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) {
+		Parcel parcel = Parcel.getParcel(WorldId,parcelName);
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
 		}
 
-		RegionManager mgr = wg.getGlobalRegionManager().get(getServer().getWorld(parcel.getWorld()));
-		ProtectedRegion region = mgr.getRegion(parcel.getId());
+		RegionManager mgr = worldGuardPlugin.getGlobalRegionManager().get(getServer().getWorld(parcel.getWorld()));
+		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
 
 		DefaultDomain own = new DefaultDomain();
 		own.addPlayer(newOwner);
@@ -497,7 +502,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the price string
 	 */
 	public void setBuyable(Player player, String parcelName, String priceString) {
-		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).eq("playerOwner", player.getName()).findUnique();
+		Parcel parcel = Parcel.getParcel(player.getWorld().toString(),parcelName,player);
 		if (parcel == null) {
 			sendComments(player, "Parcel not found or doesn't belong to you");
 			return;
@@ -523,7 +528,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the parcel name
 	 */
 	public void setUnbuyable(Player player, String parcelName) {
-		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).eq("playerOwner", player.getName()).findUnique();
+		Parcel parcel = Parcel.getParcel(player.getWorld().toString(),parcelName,player);
 		if (parcel == null) {
 			sendComments(player, "Parcel not found or doesn't belong to you");
 			return;
@@ -542,7 +547,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the parcel name
 	 */
 	public void buyParcel(Player player, String parcelName) {
-		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = Parcel.getParcel(player.getWorld().toString(),parcelName);
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
@@ -559,11 +564,11 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 		vaultEconomy.depositPlayer(parcel.getPlayerOwner(), parcel.getPrice());
 		vaultEconomy.withdrawPlayer(player.getName(), parcel.getPrice());
-		allocateParcel(player, parcelName, player.getDisplayName());
+		allocateParcel(player, player.getWorld().toString(),parcelName, player.getDisplayName());
 		sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
 
 	}
-
+	
 	/**
 	 * Manage parcel member.
 	 * 
@@ -574,7 +579,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	public void manageParcelMember(Player player, String[] args) {
 		String parcelName = args[1];
-		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = Parcel.getParcel(player.getWorld().toString(),parcelName);
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
@@ -584,8 +589,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			sendComments(player, "You don't have right on that Parcel");
 			return;
 		}
-		sendComments(player, "You have right on that Parcel, but nothinh is coded ^^");
-
+		sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
 	}
 
 
@@ -596,23 +600,23 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param parcelName the parcel name
 	 */
 	public void showParcel(Player player, String parcelName) {
-		Parcel parcel = getStaticDatabase().find(Parcel.class).where().eq("id", parcelName).findUnique();
+		Parcel parcel = Parcel.getParcel(player.getWorld().toString(),parcelName);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found");
+			sendComments(player, "Parcel not found "+player.getWorld().toString()+"::"+parcelName);
 			return;
 		}
 		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
 			sendComments(player, "You don't have right on that Parcel");
 			return;
 		}
-		if(previewBlocks.containsKey(parcel.getId())){
+		if(previewBlocks.containsKey(player.getWorld().getName()+"::"+parcel.getRegionId())){
 			sendComments(player, "Parcel preview already shown");
 			return;
 		}
 		List<Block> listBlock = new ArrayList<Block>();
-		previewBlocks.put(parcel.getId(),listBlock);
-		RegionManager mgr = wg.getGlobalRegionManager().get(getServer().getWorld(parcel.getWorld()));
-		ProtectedRegion region = mgr.getRegion(parcel.getId());
+		previewBlocks.put(player.getWorld().getName()+"::"+parcel.getRegionId(),listBlock);
+		RegionManager mgr = worldGuardPlugin.getGlobalRegionManager().get(getServer().getWorld(parcel.getWorld()));
+		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
 		
 		int nb = 0;
 		World world = getServer().getWorld(parcel.getWorld());
@@ -650,7 +654,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param parcelName the parcel name
 	 */
 	public void hideParcel(Player player, String parcelName) {
-		Parcel parcel = Parcel.getParcel(parcelName);
+		Parcel parcel = Parcel.getParcel(player.getWorld().getName(),parcelName);
 		if (parcel == null) {
 			sendComments(player, "Parcel not found");
 			return;
@@ -659,16 +663,18 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			sendComments(player, "You don't have right on that Parcel");
 			return;
 		}
-		if(!previewBlocks.containsKey(parcel.getId())){
+		if(!previewBlocks.containsKey(player.getWorld().getName()+"::"+parcel.getRegionId())){
 			sendComments(player, "Parcel preview already shown");
 			return;
 		}
 		World world = getServer().getWorld(parcel.getWorld());
-		List<Block> listBlock = previewBlocks.get(parcel.getId());
+		List<Block> listBlock = previewBlocks.get(player.getWorld().getName()+"::"+parcel.getRegionId());
 		for (Iterator<Block> pointIterator = listBlock.iterator(); pointIterator.hasNext();) {
 			Block block = pointIterator.next();
 			world.getBlockAt(block.getLocation()).setTypeId(0);
 		}
+		
+		previewBlocks.remove(player.getWorld().getName()+"::"+parcel.getRegionId());
 		sendComments(player, "Parcel hided");
 	}
 
@@ -678,8 +684,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param region the region
 	 * @return the parcel
 	 */
-	public Parcel getParcel(ProtectedRegion region) {
-		return Parcel.getParcel(region.getId());
+	public Parcel getParcel(String worldId,String parcelName) {
+		return Parcel.getParcel(worldId,parcelName);
 	}
 
 }

@@ -23,7 +23,7 @@
 		</repository>
 		<repository>
 			<id>lennardf1989-repo</id>
-			<url>http://github.lennardf1989.com/repository/</url>
+			<url>http://github.lennardf1989.com/repository/</url >
 		</repository>
 	</repositories>
 	<scm>
