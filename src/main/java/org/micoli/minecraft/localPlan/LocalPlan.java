@@ -651,97 +651,97 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	
 	@QDCommand(	aliases = "commentsOn",
-				permissions={"."})
+				permissions={})
 	public void cmd_commentsOn(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, true);
 	}
 
 	@QDCommand(	aliases = "commentsOff",
-				permissions={"."})
+				permissions={})
 	public void cmd_commentsOff(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, false);
 	}
 
 	@QDCommand(	aliases = "list",
-				permissions={"."})
+				permissions={"localplan.list"})
 	public void cmd_list(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, args.length == 1 ? ((Player) sender).getName() : args[1], Parcel.parcelStatus.ANY);
 	}
 
 	@QDCommand(	aliases = "listall",
-				permissions={"."})
+				permissions={})
 	public void cmd_listall(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.ANY);
 	}
 
 	@QDCommand(	aliases = "listavailable",
-				permissions={"."})
+				permissions={})
 	public void cmd_listavailable(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.FREE);
 	}
 
 	@QDCommand(	aliases = "listbuyable",
-				permissions={"."})
+				permissions={})
 	public void cmd_listbuyable(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.OWNED_BUYABLE);
 	}
 
 	@QDCommand(	aliases = "buyable",
-				permissions={"."})
+				permissions={})
 	public void cmd_buyable(CommandSender sender, Command command, String label, String[] args) {
 		this.setBuyable((Player) sender, args[1], args[2]);
 	}
 
 	@QDCommand(	aliases = "unbuyable",
-				permissions={"."})
+				permissions={})
 	public void cmd_unbuyable(CommandSender sender, Command command, String label, String[] args) {
 		this.setUnbuyable((Player) sender, args[1]);
 	}
 
 	@QDCommand(	aliases = "buy",
-				permissions={"."})
+				permissions={})
 	public void cmd_buy(CommandSender sender, Command command, String label, String[] args) {
 		this.buyParcel((Player) sender, args[1]);
 	}
 
 	@QDCommand(	aliases = "tp",
-				permissions={"."})
+				permissions={})
 	public void cmd_tp(CommandSender sender, Command command, String label, String[] args) {
 		this.teleportToParcel((Player) sender, args[1]);
 	}
 
 	@QDCommand(	aliases = "create",
-				permissions={"."})
+				permissions={})
 	public void cmd_define(CommandSender sender, Command command, String label, String[] args) {
 		this.createParcel((Player) sender, args[1]);
 	}
 
 	@QDCommand(	aliases = "alllocate",
-				permissions={"."})
+				permissions={})
 	public void cmd_allocate(CommandSender sender, Command command, String label, String[] args) {
 		this.allocateParcel((Player) sender, ((Player) sender).getWorld().getName(), args[1], args[2]);
 	}
 
 	@QDCommand(	aliases = "member",
-				permissions={"."})
+				permissions={})
 	public void cmd_member(CommandSender sender, Command command, String label, String[] args) {
 		this.manageParcelMember((Player) sender, args);
 	}
 
 	@QDCommand(	aliases = "show",
-				permissions={"."})
+				permissions={})
 	public void cmd_show(CommandSender sender, Command command, String label, String[] args) {
 		this.showParcel((Player) sender, args[1]);
 	}
 
 	@QDCommand(	aliases = "hide",
-				permissions={"."})
+				permissions={})
 	public void cmd_hide(CommandSender sender, Command command, String label, String[] args) {
 		this.hideParcel((Player) sender, args[1]);
 	}
 
 	@QDCommand(	aliases = "scan",
-				permissions={"."})
+				permissions={})
 	public void cmd_scan(CommandSender sender, Command command, String label, String[] args) {
 		this.initalizeRegions();
 	}

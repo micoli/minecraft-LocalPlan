@@ -166,7 +166,7 @@
 				<version>1.1.1</version>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<phase>site</phase>
 						<goals>
 							<goal>exec</goal>
 						</goals>
