@@ -14,16 +14,8 @@
 			<url>http://repo.bukkit.org/content/groups/public</url>
 		</repository>
 		<repository>
-			<id>org.micoli.minecraft</id>
-			<url>https://github.com/micoli/maven-repo/snapshots</url>
-		</repository>
-		<repository>
 			<id>avaje.org</id>
 			<url>http://www.avaje.org/archiva/repository/internal</url>
-		</repository>
-		<repository>
-			<id>lennardf1989-repo</id>
-			<url>http://github.lennardf1989.com/repository/</url>
 		</repository>
 	</repositories>
 	<scm>
@@ -33,6 +25,11 @@
 	</scm>
 	<dependencies>
 		<dependency>
+			<groupId>org.bukkit</groupId>
+			<artifactId>craftbukkit</artifactId>
+			<version>1.2.4-R0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
 			<groupId>com.lennardf1989</groupId>
 			<artifactId>bukkitex</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
@@ -41,11 +38,6 @@
 			<groupId>org.micoli.minecraft</groupId>
 			<artifactId>morg-utils</artifactId>
 			<version>0.1.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.bukkit</groupId>
-			<artifactId>craftbukkit</artifactId>
-			<version>1.2.4-R0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.milkbowl.vault</groupId>

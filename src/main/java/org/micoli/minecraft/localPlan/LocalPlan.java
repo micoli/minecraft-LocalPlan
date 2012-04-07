@@ -18,14 +18,14 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommand;
 import org.micoli.minecraft.localPlan.entities.Parcel;
 import org.micoli.minecraft.localPlan.entities.Parcel.parcelStatus;
-import org.micoli.minecraft.localPlan.managers.QDCommandManager;
+import org.micoli.minecraft.localPlan.managers.LocalPlanCommandManager;
 import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
+import org.micoli.minecraft.utils.PluginEnvironment;
 import org.micoli.minecraft.utils.ServerLogger;
 
 import com.avaje.ebean.Expression;
@@ -34,7 +34,6 @@ import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
 import com.sk89q.worldedit.bukkit.selections.Polygonal2DSelection;
@@ -58,7 +57,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/** The my executor. */
-	protected QDCommandManager executor;
+	protected LocalPlanCommandManager executor;
 
 	/** The instance. */
 	private static LocalPlan instance;
@@ -97,8 +96,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		aParcel = new HashMap<String, Parcel>();
 		instance = this;
 		commandString = "lp";
-		worldGuardPlugin = getWorldGuard();
-		worldEditPlugin = getWorldEdit();
+		worldGuardPlugin = PluginEnvironment.getWorldGuard(getServer());
+		worldEditPlugin = PluginEnvironment.getWorldEdit(getServer());
 
 		loadConfiguration();
 		initializeDatabase();
@@ -113,51 +112,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		// ServerLogger.log("Parcels list end");
 		initalizeRegions();
 
-		executor = new QDCommandManager(this, new Class[] { getClass() });
-	}
-
-	/**
-	 * Gets the world guard.
-	 * 
-	 * @return the world guard
-	 */
-	private WorldGuardPlugin getWorldGuard() {
-		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
-
-		// WorldGuard may not be loaded
-		if (plugin == null || !(plugin instanceof WorldGuardPlugin)) {
-			ServerLogger.log("WorldGuard not found");
-			return null; // Maybe you want throw an exception instead
-		}
-
-		return (WorldGuardPlugin) plugin;
-	}
-
-	/**
-	 * Gets the world edit.
-	 * 
-	 * @return the world edit
-	 */
-	private WorldEditPlugin getWorldEdit() {
-		Plugin plugin = getServer().getPluginManager().getPlugin("WorldEdit");
-
-		if (plugin == null || !(plugin instanceof WorldEdit)) {
-			Plugin[] plugs = getServer().getPluginManager().getPlugins();
-			for (int t = 0; t < plugs.length; t++) {
-				if (plugs[t].getName().trim().equalsIgnoreCase("WorldEdit")) {
-					plugin = plugs[t];
-					break;
-				}
-			}
-		}
-
-		// WorldEdit may not be loaded
-		if (plugin == null || !(plugin instanceof WorldEditPlugin)) {
-			ServerLogger.log("WorldEdit not found");
-			return null; // Maybe you want throw an exception instead
-		}
-
-		return (WorldEditPlugin) plugin;
+		executor = new LocalPlanCommandManager(this, new Class[] { getClass() });
 	}
 
 	/*
@@ -694,82 +649,99 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		return Parcel.getParcel(worldId, parcelName);
 	}
 
-	@QDCommand(aliases = "commentsOn")
+	
+	@QDCommand(	aliases = "commentsOn",
+				permissions={"."})
 	public void cmd_commentsOn(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, true);
 	}
 
-	@QDCommand(aliases = "commentsOff")
+	@QDCommand(	aliases = "commentsOff",
+				permissions={"."})
 	public void cmd_commentsOff(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, false);
 	}
 
-	@QDCommand(aliases = "list")
+	@QDCommand(	aliases = "list",
+				permissions={"."})
 	public void cmd_list(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, args.length == 1 ? ((Player) sender).getName() : args[1], Parcel.parcelStatus.ANY);
 	}
 
-	@QDCommand(aliases = "listall")
+	@QDCommand(	aliases = "listall",
+				permissions={"."})
 	public void cmd_listall(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.ANY);
 	}
 
-	@QDCommand(aliases = "listavailable")
+	@QDCommand(	aliases = "listavailable",
+				permissions={"."})
 	public void cmd_listavailable(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.FREE);
 	}
 
-	@QDCommand(aliases = "listbuyable")
+	@QDCommand(	aliases = "listbuyable",
+				permissions={"."})
 	public void cmd_listbuyable(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.OWNED_BUYABLE);
 	}
 
-	@QDCommand(aliases = "buyable")
+	@QDCommand(	aliases = "buyable",
+				permissions={"."})
 	public void cmd_buyable(CommandSender sender, Command command, String label, String[] args) {
 		this.setBuyable((Player) sender, args[1], args[2]);
 	}
 
-	@QDCommand(aliases = "unbuyable")
+	@QDCommand(	aliases = "unbuyable",
+				permissions={"."})
 	public void cmd_unbuyable(CommandSender sender, Command command, String label, String[] args) {
 		this.setUnbuyable((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "buy")
+	@QDCommand(	aliases = "buy",
+				permissions={"."})
 	public void cmd_buy(CommandSender sender, Command command, String label, String[] args) {
 		this.buyParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "tp")
+	@QDCommand(	aliases = "tp",
+				permissions={"."})
 	public void cmd_tp(CommandSender sender, Command command, String label, String[] args) {
 		this.teleportToParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "create")
+	@QDCommand(	aliases = "create",
+				permissions={"."})
 	public void cmd_define(CommandSender sender, Command command, String label, String[] args) {
 		this.createParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "alllocate")
+	@QDCommand(	aliases = "alllocate",
+				permissions={"."})
 	public void cmd_allocate(CommandSender sender, Command command, String label, String[] args) {
 		this.allocateParcel((Player) sender, ((Player) sender).getWorld().getName(), args[1], args[2]);
 	}
 
-	@QDCommand(aliases = "member")
+	@QDCommand(	aliases = "member",
+				permissions={"."})
 	public void cmd_member(CommandSender sender, Command command, String label, String[] args) {
 		this.manageParcelMember((Player) sender, args);
 	}
 
-	@QDCommand(aliases = "show")
+	@QDCommand(	aliases = "show",
+				permissions={"."})
 	public void cmd_show(CommandSender sender, Command command, String label, String[] args) {
 		this.showParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "hide")
+	@QDCommand(	aliases = "hide",
+				permissions={"."})
 	public void cmd_hide(CommandSender sender, Command command, String label, String[] args) {
 		this.hideParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "scan")
+	@QDCommand(	aliases = "scan",
+				permissions={"."})
 	public void cmd_scan(CommandSender sender, Command command, String label, String[] args) {
 		this.initalizeRegions();
 	}
