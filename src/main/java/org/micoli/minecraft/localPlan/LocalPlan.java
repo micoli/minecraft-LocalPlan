@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -18,10 +20,16 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.dynmap.DynmapCommonAPI;
+import org.dynmap.markers.Marker;
+import org.dynmap.markers.MarkerSet;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommand;
+import org.micoli.minecraft.bukkit.QDCommandException;
+import org.micoli.minecraft.localPlan.entities.InterestPoint;
 import org.micoli.minecraft.localPlan.entities.Parcel;
-import org.micoli.minecraft.localPlan.entities.Parcel.parcelStatus;
+import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
+import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
 import org.micoli.minecraft.localPlan.managers.LocalPlanCommandManager;
 import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
@@ -30,7 +38,6 @@ import org.micoli.minecraft.utils.ServerLogger;
 
 import com.avaje.ebean.Expression;
 import com.avaje.ebean.Query;
-import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldedit.Vector;
@@ -71,8 +78,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The worldedit plugin. */
 	private WorldEditPlugin worldEditPlugin;
 
+	DynmapCommonAPI dynmapPlugin;
+	
+	public double markerDefaultPrice = 50;
+	public double markerMaximumDistance = 1000;
+
 	/** The preview blocks. */
 	private HashMap<String, List<Block>> previewBlocks = new HashMap<String, List<Block>>();
+	private HashMap<String, ArrayList<InterestPoint>> interestPoints;
 
 	/**
 	 * Gets the single instance of LocalPlan.
@@ -90,26 +103,24 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	@Override
 	public void onEnable() {
+		instance = this;
+		commandString = "lp";
 		super.onEnable();
 		log(ChatFormater.format("%s version enabled", this.pdfFile.getName(), this.pdfFile.getVersion()));
 
 		aParcel = new HashMap<String, Parcel>();
-		instance = this;
-		commandString = "lp";
 		worldGuardPlugin = PluginEnvironment.getWorldGuard(getServer());
 		worldEditPlugin = PluginEnvironment.getWorldEdit(getServer());
+		dynmapPlugin = (DynmapCommonAPI) getServer().getPluginManager().getPlugin("dynmap");
 
-		loadConfiguration();
-		initializeDatabase();
+		configFile.set("marker.defaultPrice", configFile.getDouble("marker.defaultPrice", 50));
+		markerDefaultPrice = configFile.getDouble("marker.defaultPrice", 50);
+		
+		configFile.set("marker.markerMaximumDistance", configFile.getDouble("marker.markerMaximumDistance", 300));
+		markerMaximumDistance = configFile.getDouble("marker.defaultPrice", 300);
+		saveConfig();
 
-		// ServerLogger.log("Parcels list");
-		// Iterator<Parcel> iter =
-		// getStaticDatabase().find(Parcel.class).findList().iterator();
-		// while (iter.hasNext()) {
-		// Parcel re = iter.next();
-		// ServerLogger.log("[%s]",re.getId());
-		// }
-		// ServerLogger.log("Parcels list end");
+		initializeInterestsPoint();
 		initalizeRegions();
 
 		executor = new LocalPlanCommandManager(this, new Class[] { getClass() });
@@ -136,33 +147,55 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @param status
 	 *            the status
 	 */
-	public void listParcels(Player player, String owner, parcelStatus status) {
+	public void listParcels(Player player, String owner, buyStatusTypes buyStatus, ownerTypes ownerType) {
 		String ownerArg = owner;
-		String statusArg = Parcel.parcelStatus.ANY.toString();
+		String buyStatusArg = buyStatus.toString();
+		String ownerTypeArg = ownerType.toString();
 
 		if (owner.equalsIgnoreCase("__all__")) {
 			owner = "ALL";
 			ownerArg = "%";
 		}
 
-		if (status.equals(Parcel.parcelStatus.ANY)) {
-			statusArg = "%";
-		} else {
-			statusArg = status.toString();
+		if (buyStatus.equals(Parcel.buyStatusTypes.ANY)) {
+			buyStatusArg = "%";
 		}
 
-		// todo revoir l'ordre des resultats pour les alignements
-		Iterator<Parcel> parcelIterator = getStaticDatabase().find(Parcel.class).where().like("playerOwner", ownerArg).like("status", statusArg).orderBy("id desc").findList().iterator();
+		if (ownerType.equals(Parcel.ownerTypes.ANY)) {
+			ownerTypeArg = "%";
+		}
+
+		//todo revoir l'ordre des resultats pour les alignements
+		Iterator<Parcel> parcelIterator = getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
 
 		if (parcelIterator.hasNext()) {
 			sendComments(player, ChatFormater.format("List of owned parcels"));
 			while (parcelIterator.hasNext()) {
 				Parcel re = parcelIterator.next();
-				sendComments(player, ChatFormater.format("%5s:%15s:%8s:%8s", re.getWorld(), re.getRegionId(), re.getPlayerOwner(), re.getStatus()));
+				sendComments(player, ChatFormater.format("%5s:%15s:%8s:%8s:%8s", re.getWorld(), re.getRegionId(), re.getBuyStatus(), re.getOwner(), re.getOwnerType()));
 			}
 			sendComments(player, ChatFormater.format("-----------"));
 		} else {
 			sendComments(player, ChatFormater.format("No parcels", owner));
+		}
+	}
+	
+	public void initializeInterestsPoint(){
+		interestPoints = new HashMap<String, ArrayList<InterestPoint>>();
+
+		MarkerSet localPlanMarkerSet = dynmapPlugin.getMarkerAPI().getMarkerSet("LocalPlan");
+		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
+		Pattern pattern = Pattern.compile("-(\\d+(\\.\\d+)?)$");
+		while (localPlanMarkerSetIterator.hasNext()) {
+			Marker marker = localPlanMarkerSetIterator.next();
+			Matcher matcher = pattern.matcher(marker.getLabel());
+			if (matcher.find()) {
+				if (!interestPoints.containsKey(marker.getWorld())) {
+					interestPoints.put(marker.getWorld(), new ArrayList<InterestPoint>());
+				}
+				interestPoints.get(marker.getWorld()).add(new InterestPoint(marker.getWorld(), marker.getMarkerSet(), marker.getLabel(), matcher.group().substring(1),new BlockVector2D( marker.getX(),marker.getZ())));
+				ServerLogger.log("Markers : %s ", marker.getLabel());
+			}
 		}
 	}
 
@@ -193,25 +226,18 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 				if (depth > maxdepth) {
 					continue;
 				}
-				if (pr.getId() != "__global__") {
-					ServerLogger.log("W:%s,P:%s,O:%s,S:%d", worldName, pr.getId(), pr.getOwners().toPlayersString(), pr.volume() / 256);
+				if (!pr.getId().equalsIgnoreCase("__global__")) {
+					ServerLogger.log("W:%s,P:%s,O:%s,S:%d", worldName, pr.getId(), pr.getOwners().toPlayersString(), LocalPlanUtils.getRegionSurface(pr));
 					listRegions.add(pr.getId());
 					if (!listParcels.containsKey(worldName + "::" + pr.getId())) {
-						Parcel parcel = new Parcel();
-						parcel.setId(worldName + "::" + pr.getId());
-						parcel.setWorld(worldName);
-						parcel.setRegionId(pr.getId());
-						parcel.setPlayerOwner("__state__");
-						parcel.setStatus(Parcel.parcelStatus.FREE);
+						Parcel parcel = new Parcel(worldName, pr);
 						parcel.save();
-
 						ServerLogger.log("Automatically adding %s::%s(%s)", worldName, pr.getId(), pr.getOwners().toPlayersString());
 					} else {
 						Parcel parcel = listParcels.get(worldName + "::" + pr.getId());
-						if (parcel.getSurface() != pr.volume() / 256) {
-							parcel.setSurface(pr.volume() / 256);
+						if (parcel.getSurface() != LocalPlanUtils.getRegionSurface(pr)) {
+							parcel.setPriceAndSurface(worldName, pr);
 							parcel.save();
-
 							ServerLogger.log("Updating surface of  %s::%s(%d)", worldName, pr.getId(), parcel.getSurface());
 						}
 					}
@@ -229,7 +255,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 			}
 		}
 		ServerLogger.log("EndInitalizeRegions");
-
 	}
 
 	/**
@@ -259,84 +284,75 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the player
 	 * @param id
 	 *            the id
+	 * @throws Exception
 	 */
-	public void createParcel(Player player, String parcelName) {
+	public void createParcel(Player player, String parcelName) throws Exception {
+		if (!ProtectedRegion.isValidId(parcelName)) {
+			throw new QDCommandException("Invalid region ID specified!");
+		}
+
+		if (parcelName.equalsIgnoreCase("__global__")) {
+			throw new QDCommandException("A region cannot be named __global__");
+		}
+
+		// Attempt to get the player's selection from WorldEdit
+		Selection sel = worldEditPlugin.getSelection(player);
+
+		if (sel == null) {
+			throw new QDCommandException("Select a region with WorldEdit first.");
+		}
+
+		World w = sel.getWorld();
+		RegionManager mgr = worldGuardPlugin.getGlobalRegionManager().get(w);
+		if (mgr.hasRegion(parcelName)) {
+			throw new QDCommandException("That region is already defined. Use redefine instead.");
+		}
+
+		ProtectedRegion region;
+
+		// Detect the type of region from WorldEdit
+		if (sel instanceof Polygonal2DSelection) {
+			Polygonal2DSelection polySel = (Polygonal2DSelection) sel;
+			region = new ProtectedPolygonalRegion(parcelName, polySel.getNativePoints(), 0, w.getMaxHeight());
+		} else if (sel instanceof CuboidSelection) {
+			BlockVector min = sel.getNativeMinimumPoint().setY(0).toBlockVector();
+			BlockVector max = sel.getNativeMaximumPoint().setY(w.getMaxHeight()).toBlockVector();
+			region = new ProtectedCuboidRegion(parcelName, min, max);
+			ServerLogger.log("region %s %s %d",min.toString(),max.toString(), w.getMaxHeight());
+		} else {
+			throw new QDCommandException("The type of region selected in WorldEdit is unsupported in WorldGuard!");
+		}
+		List<ProtectedRegion> allregionslist = new ArrayList<ProtectedRegion>(mgr.getRegions().values());
+		List<ProtectedRegion> overlaps;
+
 		try {
-
-			if (!ProtectedRegion.isValidId(parcelName)) {
-				throw new CommandException("Invalid region ID specified!");
+			overlaps = region.getIntersectingRegions(allregionslist);
+			if (!(overlaps == null || overlaps.isEmpty())) {
+				throw new QDCommandException("That region is overlapping an existing one.");
 			}
-
-			if (parcelName.equalsIgnoreCase("__global__")) {
-				throw new CommandException("A region cannot be named __global__");
-			}
-
-			// Attempt to get the player's selection from WorldEdit
-			Selection sel = worldEditPlugin.getSelection(player);
-
-			if (sel == null) {
-				throw new CommandException("Select a region with WorldEdit first.");
-			}
-
-			World w = sel.getWorld();
-			RegionManager mgr = worldGuardPlugin.getGlobalRegionManager().get(w);
-			if (mgr.hasRegion(parcelName)) {
-				throw new CommandException("That region is already defined. Use redefine instead.");
-			}
-
-			ProtectedRegion region;
-
-			// Detect the type of region from WorldEdit
-			if (sel instanceof Polygonal2DSelection) {
-				Polygonal2DSelection polySel = (Polygonal2DSelection) sel;
-				region = new ProtectedPolygonalRegion(parcelName, polySel.getNativePoints(), 0, w.getMaxHeight());
-			} else if (sel instanceof CuboidSelection) {
-				BlockVector min = sel.getNativeMinimumPoint().toBlockVector();
-				BlockVector max = sel.getNativeMaximumPoint().toBlockVector();
-				min.setY(0);
-				max.setY(w.getMaxHeight());
-				region = new ProtectedCuboidRegion(parcelName, min, max);
-			} else {
-				throw new CommandException("The type of region selected in WorldEdit is unsupported in WorldGuard!");
-			}
-			List<ProtectedRegion> allregionslist = new ArrayList<ProtectedRegion>(mgr.getRegions().values());
-			List<ProtectedRegion> overlaps;
-
-			try {
-				overlaps = region.getIntersectingRegions(allregionslist);
-				if (!(overlaps == null || overlaps.isEmpty())) {
-					throw new CommandException("That region is overlapping an existing one.");
-				}
-			} catch (UnsupportedIntersectionException e) {
-				e.printStackTrace();
-			}
-			// Get the list of region owners
-			DefaultDomain own = new DefaultDomain();
-			own.addPlayer(player.getName());
-			region.setOwners(own);
-			setRegionFlag(player, region, "BUILD", "allow");
-
-			mgr.addRegion(region);
-
-			Parcel parcel = new Parcel();
-			parcel.setId(w.getName() + "::" + region.getId());
-			parcel.setWorld(w.getName());
-			parcel.setRegionId(region.getId());
-			parcel.setPlayerOwner("__state__");
-			parcel.setStatus(Parcel.parcelStatus.FREE);
-			parcel.setSurface(region.volume() / 256);
-
-			parcel.save();
-
-			try {
-				mgr.save();
-				sendComments(player, ChatColor.YELLOW + "Region saved as " + parcelName + ".", false);
-			} catch (ProtectionDatabaseException e) {
-				throw new CommandException("Failed to write regions: " + e.getMessage());
-			}
-		} catch (CommandException e) {
-			// TODO Auto-generated catch block
+		} catch (UnsupportedIntersectionException e) {
 			e.printStackTrace();
+		}
+		// Get the list of region owners
+		DefaultDomain own = new DefaultDomain();
+		own.addPlayer(player.getName());
+		region.setOwners(own);
+		setRegionFlag(player, region, "BUILD", "allow");
+
+		mgr.addRegion(region);
+		Parcel parcel = Parcel.getParcel(w.getName(), parcelName);
+		if(parcel==null){
+			parcel = new Parcel(w.getName(), region);
+		}else{
+			parcel.setPriceAndSurface(w.getName(), region);
+		}
+		parcel.save();
+
+		try {
+			mgr.save();
+			sendComments(player, ChatColor.YELLOW + "Region saved as " + parcelName + ".", false);
+		} catch (ProtectionDatabaseException e) {
+			throw new QDCommandException("Failed to write regions: " + e.getMessage());
 		}
 	}
 
@@ -424,12 +440,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the parcel name
 	 * @param newOwner
 	 *            the new owner
+	 * @throws QDCommandException
 	 */
-	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) {
+	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(WorldId, parcelName);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found");
-			return;
+			throw new QDCommandException("Parcel not found");
 		}
 
 		RegionManager mgr = worldGuardPlugin.getGlobalRegionManager().get(getServer().getWorld(parcel.getWorld()));
@@ -439,8 +455,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		own.addPlayer(newOwner);
 		region.setOwners(own);
 
-		parcel.setPlayerOwner(newOwner);
-		parcel.setStatus(Parcel.parcelStatus.OWNED);
+		parcel.setOwner(newOwner);
+		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
 
 		sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
@@ -455,21 +471,20 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the parcel name
 	 * @param priceString
 	 *            the price string
+	 * @throws Exception
 	 */
-	public void setBuyable(Player player, String parcelName, String priceString) {
+	public void setBuyable(Player player, String parcelName, String priceString) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName, player);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found or doesn't belong to you");
-			return;
+			throw new QDCommandException("Parcel not found or doesn't belong to you");
 		}
 		Scanner scanner = new Scanner(priceString);
 		if (!scanner.hasNextDouble()) {
-			sendComments(player, "Price not found or not the good format 99.9");
-			return;
+			throw new QDCommandException("Price not found or not the good format 99.9");
 		}
 		double price = scanner.nextDouble();
 		parcel.setPrice(price);
-		parcel.setStatus(Parcel.parcelStatus.OWNED_BUYABLE);
+		parcel.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
 		parcel.save();
 		sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
 	}
@@ -481,14 +496,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the player
 	 * @param parcelName
 	 *            the parcel name
+	 * @throws Exception
 	 */
-	public void setUnbuyable(Player player, String parcelName) {
+	public void setUnbuyable(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName, player);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found or doesn't belong to you");
-			return;
+			throw new QDCommandException("Parcel not found or doesn't belong to you");
 		}
-		parcel.setStatus(Parcel.parcelStatus.OWNED);
+		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
 		sendComments(player, ChatFormater.format("Parcel %s is now unbuyable ", parcelName));
 	}
@@ -500,24 +515,22 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the player
 	 * @param parcelName
 	 *            the parcel name
+	 * @throws Exception
 	 */
-	public void buyParcel(Player player, String parcelName) {
+	public void buyParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found");
-			return;
+			throw new QDCommandException("Parcel not found");
 		}
 
-		if (parcel.getStatus().equals(Parcel.parcelStatus.OWNED_BUYABLE)) {
-			sendComments(player, "Parcel is not buyable");
-			return;
+		if (parcel.getBuyStatus().equals(Parcel.buyStatusTypes.UNBUYABLE)) {
+			throw new QDCommandException("Parcel is not buyable");
 		}
 
 		if (parcel.getPrice() > vaultEconomy.getBalance(player.getName())) {
-			sendComments(player, ChatFormater.format("Not enough money to buy that parcel %f<%f", vaultEconomy.getBalance(player.getName()), parcel.getPrice()));
-			return;
+			throw new QDCommandException(ChatFormater.format("Not enough money to buy that parcel %f<%f", vaultEconomy.getBalance(player.getName()), parcel.getPrice()));
 		}
-		vaultEconomy.depositPlayer(parcel.getPlayerOwner(), parcel.getPrice());
+		vaultEconomy.depositPlayer(parcel.getOwner(), parcel.getPrice());
 		vaultEconomy.withdrawPlayer(player.getName(), parcel.getPrice());
 		allocateParcel(player, player.getWorld().toString(), parcelName, player.getDisplayName());
 		sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
@@ -531,18 +544,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the player
 	 * @param args
 	 *            the args
+	 * @throws Exception
 	 */
-	public void manageParcelMember(Player player, String[] args) {
+	public void manageParcelMember(Player player, String[] args) throws Exception {
 		String parcelName = args[1];
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found");
-			return;
+			throw new QDCommandException("Parcel not found");
 		}
 
-		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
-			sendComments(player, "You don't have right on that Parcel");
-			return;
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
 	}
@@ -554,20 +566,18 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the player
 	 * @param parcelName
 	 *            the parcel name
+	 * @throws Exception
 	 */
-	public void showParcel(Player player, String parcelName) {
+	public void showParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found " + player.getWorld().toString() + "::" + parcelName);
-			return;
+			throw new QDCommandException("Parcel not found " + player.getWorld().toString() + "::" + parcelName);
 		}
-		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
-			sendComments(player, "You don't have right on that Parcel");
-			return;
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		if (previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {
-			sendComments(player, "Parcel preview already shown");
-			return;
+			throw new QDCommandException("Parcel preview already shown");
 		}
 		List<Block> listBlock = new ArrayList<Block>();
 		previewBlocks.put(player.getWorld().getName() + "::" + parcel.getRegionId(), listBlock);
@@ -612,20 +622,18 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the player
 	 * @param parcelName
 	 *            the parcel name
+	 * @throws Exception
 	 */
-	public void hideParcel(Player player, String parcelName) {
+	public void hideParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
 		if (parcel == null) {
-			sendComments(player, "Parcel not found");
-			return;
+			throw new QDCommandException("Parcel not found");
 		}
-		if (!(parcel.getPlayerOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
-			sendComments(player, "You don't have right on that Parcel");
-			return;
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		if (!previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {
-			sendComments(player, "Parcel preview already shown");
-			return;
+			throw new QDCommandException("Parcel preview already shown");
 		}
 		World world = getServer().getWorld(parcel.getWorld());
 		List<Block> listBlock = previewBlocks.get(player.getWorld().getName() + "::" + parcel.getRegionId());
@@ -635,7 +643,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 
 		previewBlocks.remove(player.getWorld().getName() + "::" + parcel.getRegionId());
-		sendComments(player, "Parcel hided");
+		sendComments(player, "Parcel hidden");
+	}
+
+	/**
+	 * @return the interestPoints
+	 */
+	public HashMap<String, ArrayList<InterestPoint>> getInterestPoints() {
+		return interestPoints;
 	}
 
 	/**
@@ -649,99 +664,93 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		return Parcel.getParcel(worldId, parcelName);
 	}
 
-	
-	@QDCommand(	aliases = "commentsOn",
-				permissions={})
+	@QDCommand(aliases = "commentsOn", permissions = {})
 	public void cmd_commentsOn(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, true);
 	}
 
-	@QDCommand(	aliases = "commentsOff",
-				permissions={})
+	@QDCommand(aliases = "commentsOff", permissions = {})
 	public void cmd_commentsOff(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, false);
 	}
 
-	@QDCommand(	aliases = "list",
-				permissions={"localplan.list"})
-	public void cmd_list(CommandSender sender, Command command, String label, String[] args) {
-		this.listParcels((Player) sender, args.length == 1 ? ((Player) sender).getName() : args[1], Parcel.parcelStatus.ANY);
+	@QDCommand(aliases = "list", permissions = { "" })
+	public void cmd_list(CommandSender sender, Command command, String label, String[] args) throws Exception {
+		if (args.length == 1) {
+			this.listParcels((Player) sender, ((Player) sender).getName(), buyStatusTypes.ANY, ownerTypes.ANY);
+		} else {
+			if (args.length == 2) {
+				this.listParcels((Player) sender, args[1], buyStatusTypes.ANY, ownerTypes.ANY);
+			} else {
+				throw new QDCommandException("Too many arguments");
+			}
+		}
 	}
 
-	@QDCommand(	aliases = "listall",
-				permissions={})
+	@QDCommand(aliases = "listall", permissions = {})
 	public void cmd_listall(CommandSender sender, Command command, String label, String[] args) {
-		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.ANY);
+		this.listParcels((Player) sender, "__all__", buyStatusTypes.ANY, ownerTypes.ANY);
 	}
 
-	@QDCommand(	aliases = "listavailable",
-				permissions={})
+	@QDCommand(aliases = "listavailable", permissions = {})
 	public void cmd_listavailable(CommandSender sender, Command command, String label, String[] args) {
-		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.FREE);
+		this.listParcels((Player) sender, "", buyStatusTypes.ANY, ownerTypes.ANY);
 	}
 
-	@QDCommand(	aliases = "listbuyable",
-				permissions={})
+	@QDCommand(aliases = "listbuyable", permissions = {})
 	public void cmd_listbuyable(CommandSender sender, Command command, String label, String[] args) {
-		this.listParcels((Player) sender, "__all__", Parcel.parcelStatus.OWNED_BUYABLE);
+		this.listParcels((Player) sender, "__all__", buyStatusTypes.BUYABLE, ownerTypes.ANY);
 	}
 
-	@QDCommand(	aliases = "buyable",
-				permissions={})
-	public void cmd_buyable(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "buyable", permissions = {})
+	public void cmd_buyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.setBuyable((Player) sender, args[1], args[2]);
 	}
 
-	@QDCommand(	aliases = "unbuyable",
-				permissions={})
-	public void cmd_unbuyable(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "unbuyable", permissions = {})
+	public void cmd_unbuyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.setUnbuyable((Player) sender, args[1]);
 	}
 
-	@QDCommand(	aliases = "buy",
-				permissions={})
-	public void cmd_buy(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "buy", permissions = {})
+	public void cmd_buy(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.buyParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(	aliases = "tp",
-				permissions={})
+	@QDCommand(aliases = "tp", permissions = {})
 	public void cmd_tp(CommandSender sender, Command command, String label, String[] args) {
 		this.teleportToParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(	aliases = "create",
-				permissions={})
-	public void cmd_define(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "create", permissions = {})
+	public void cmd_define(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.createParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(	aliases = "alllocate",
-				permissions={})
-	public void cmd_allocate(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "allocate", permissions = {})
+	public void cmd_allocate(CommandSender sender, Command command, String label, String[] args) throws QDCommandException {
+		if (args.length != 3) {
+			throw new QDCommandException("usage : /lp allocate parcelName playerName");
+		}
 		this.allocateParcel((Player) sender, ((Player) sender).getWorld().getName(), args[1], args[2]);
 	}
 
-	@QDCommand(	aliases = "member",
-				permissions={})
-	public void cmd_member(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "member", permissions = {})
+	public void cmd_member(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.manageParcelMember((Player) sender, args);
 	}
 
-	@QDCommand(	aliases = "show",
-				permissions={})
-	public void cmd_show(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "show", permissions = {})
+	public void cmd_show(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.showParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(	aliases = "hide",
-				permissions={})
-	public void cmd_hide(CommandSender sender, Command command, String label, String[] args) {
+	@QDCommand(aliases = "hide", permissions = {})
+	public void cmd_hide(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.hideParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(	aliases = "scan",
-				permissions={})
+	@QDCommand(aliases = "scan", permissions = {})
 	public void cmd_scan(CommandSender sender, Command command, String label, String[] args) {
 		this.initalizeRegions();
 	}

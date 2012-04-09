@@ -1,54 +1,60 @@
 package org.micoli.minecraft.localPlan.entities;
 
+import java.util.Iterator;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.bukkit.entity.Player;
 import org.micoli.minecraft.localPlan.LocalPlan;
+import org.micoli.minecraft.localPlan.LocalPlanUtils;
+import org.micoli.minecraft.utils.ServerLogger;
 
 import com.avaje.ebean.annotation.EnumValue;
 import com.avaje.ebean.validation.Length;
 import com.avaje.ebean.validation.NotNull;
+import com.sk89q.worldedit.BlockVector2D;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 /**
  * The Class Parcel.
- *
+ * 
  * @author o.michaud
  */
+
 @Entity
 @Table(name = "mra_prc_parcel")
 public class Parcel {
-	
+
 	/** The plugin. */
 	static LocalPlan plugin;
-	
-	/**
-	 * The Enum parcelStatus.
-	 */
-	public enum parcelStatus {
-		
-		/** The ANY. */
+
+	public enum buyStatusTypes {
 		@EnumValue("ANY")
 		ANY,
-		
-		/** The FREE. */
-		@EnumValue("FREE")
-		FREE,
-		
-		/** The OWNED. */
-		@EnumValue("OWNED")
-		OWNED,
-		
-		/** The OWNE d_ buyable. */
-		@EnumValue("OWNED_BUYABLE")
-		OWNED_BUYABLE,
-		
-		/** The SYSTEM. */
-		@EnumValue("SYSTEM")
-		SYSTEM
+
+		@EnumValue("BUYABLE")
+		BUYABLE,
+
+		@EnumValue("UNBUYABLE")
+		UNBUYABLE,
 	}
-	
+
+	public enum ownerTypes {
+		@EnumValue("ANY")
+		ANY,
+
+		@EnumValue("STATE")
+		STATE,
+
+		@EnumValue("FACTION")
+		FACTION,
+
+		@EnumValue("PLAYER")
+		PLAYER,
+	}
+
 	/** The id. */
 	@Id
 	@Length(max = 200)
@@ -67,21 +73,30 @@ public class Parcel {
 	/** The player owner. */
 	@NotNull
 	@Length(max = 100)
-	private String playerOwner;
-	
+	private String owner = "";
+
+	@NotNull
+	@Length(max = 100)
+	private String pointOfInterest;
+
+	@NotNull
+	@Length(max = 100)
+	private double distToPointOfInterest;
+
 	/** The price. */
 	@NotNull
 	@Length(min = 1)
-	private double price=1;
-	
+	private double price = 1;
+
 	/** The surface. */
 	@NotNull
 	@Length(min = 1)
-	private int surface=1;
-	
-	/** The status. */
-	private parcelStatus status = parcelStatus.SYSTEM; 
-	
+	private int surface = 1;
+
+	private buyStatusTypes buyStatus = buyStatusTypes.BUYABLE;
+
+	private ownerTypes ownerType = ownerTypes.STATE;
+
 	/**
 	 * Instantiates a new parcel.
 	 */
@@ -89,9 +104,53 @@ public class Parcel {
 		plugin = LocalPlan.getInstance();
 	}
 
+	public Parcel(String worldName, ProtectedRegion region){
+		plugin = LocalPlan.getInstance();
+		String regionId = region.getId();
+
+
+		this.setId(worldName + "::" + regionId);
+		this.setWorld(worldName);
+		this.setRegionId(regionId);
+		this.setOwner("");
+		this.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
+		this.setPriceAndSurface(world,region);
+	}
+	
+	public void setPriceAndSurface(String worldName,ProtectedRegion region){
+		double maxDistance = 1024*1024;
+		double dist = 0;
+		ServerLogger.log("volume %d",region.volume());
+		int surf = LocalPlanUtils.getRegionSurface(region);
+		double price = plugin.markerDefaultPrice*surf;
+
+		setPointOfInterest("");
+		setDistToPointOfInterest(0);
+		
+		BlockVector2D barycentre = LocalPlanUtils.getBarycentre(region);
+		Iterator<InterestPoint> interestPointIterator = plugin.getInterestPoints().get(worldName).iterator();
+		while (interestPointIterator.hasNext()) {
+			InterestPoint interestPoint = interestPointIterator.next();
+			dist = LocalPlanUtils.blockVector2DDistance(barycentre,interestPoint.blockVector2D);
+			if (dist<maxDistance){
+				maxDistance=dist;
+				setPointOfInterest(interestPoint.getLabel()); 
+				setDistToPointOfInterest(dist);
+				if (dist>plugin.markerMaximumDistance){
+					price = surf * interestPoint.price;
+				}else{
+					price = surf * (interestPoint.price-(interestPoint.price-plugin.markerDefaultPrice) / plugin.markerMaximumDistance*dist);
+				}
+			}
+		}
+		ServerLogger.log("===>%s %d,%f",region.getId(),surf,price);
+		this.setPrice(Math.round(price));
+		this.setSurface(surf);
+	}
+
 	/**
 	 * Gets the id.
-	 *
+	 * 
 	 * @return the id
 	 */
 	public String getId() {
@@ -100,8 +159,9 @@ public class Parcel {
 
 	/**
 	 * Sets the id.
-	 *
-	 * @param id the new id
+	 * 
+	 * @param id
+	 *            the new id
 	 */
 	public void setId(String id) {
 		this.id = id;
@@ -109,7 +169,7 @@ public class Parcel {
 
 	/**
 	 * Gets the world.
-	 *
+	 * 
 	 * @return the world
 	 */
 	public String getWorld() {
@@ -118,52 +178,17 @@ public class Parcel {
 
 	/**
 	 * Sets the world.
-	 *
-	 * @param world the new world
+	 * 
+	 * @param world
+	 *            the new world
 	 */
 	public void setWorld(String world) {
 		this.world = world;
 	}
 
 	/**
-	 * Gets the player owner.
-	 *
-	 * @return the player owner
-	 */
-	public String getPlayerOwner() {
-		return playerOwner;
-	}
-
-	/**
-	 * Sets the player owner.
-	 *
-	 * @param playerOwner the new player owner
-	 */
-	public void setPlayerOwner(String playerOwner) {
-		this.playerOwner = playerOwner;
-	}
-
-	/**
-	 * Gets the status.
-	 *
-	 * @return the status
-	 */
-	public parcelStatus getStatus() {
-		return status;
-	}
-
-	/**
-	 * Sets the status.
-	 *
-	 * @param status the new status
-	 */
-	public void setStatus(parcelStatus status) {
-		this.status = status;
-	}
-
-	/**
 	 * Gets the price.
-	 *
+	 * 
 	 * @return the price
 	 */
 	public double getPrice() {
@@ -172,8 +197,9 @@ public class Parcel {
 
 	/**
 	 * Sets the price.
-	 *
-	 * @param price the new price
+	 * 
+	 * @param price
+	 *            the new price
 	 */
 	public void setPrice(double price) {
 		this.price = price;
@@ -181,7 +207,7 @@ public class Parcel {
 
 	/**
 	 * Gets the surface.
-	 *
+	 * 
 	 * @return the surface
 	 */
 	public int getSurface() {
@@ -190,8 +216,9 @@ public class Parcel {
 
 	/**
 	 * Sets the surface.
-	 *
-	 * @param surface the new surface
+	 * 
+	 * @param surface
+	 *            the new surface
 	 */
 	public void setSurface(int surface) {
 		this.surface = surface;
@@ -205,19 +232,81 @@ public class Parcel {
 		this.regionId = regionId;
 	}
 
+	/**
+	 * @return the owner
+	 */
+	public String getOwner() {
+		return owner;
+	}
+
+	/**
+	 * @param owner
+	 *            the owner to set
+	 */
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
+
+	/**
+	 * @return the buyStatus
+	 */
+	public buyStatusTypes getBuyStatus() {
+		return buyStatus;
+	}
+
+	/**
+	 * @param buyStatus
+	 *            the buyStatus to set
+	 */
+	public void setBuyStatus(buyStatusTypes buyStatus) {
+		this.buyStatus = buyStatus;
+	}
+
+	public String getPointOfInterest() {
+		return pointOfInterest;
+	}
+
+	public void setPointOfInterest(String pointOfInterest) {
+		this.pointOfInterest = pointOfInterest;
+	}
+
+	/**
+	 * @return the ownerType
+	 */
+	public ownerTypes getOwnerType() {
+		return ownerType;
+	}
+
+	/**
+	 * @param ownerType
+	 *            the ownerType to set
+	 */
+	public void setOwnerType(ownerTypes ownerType) {
+		this.ownerType = ownerType;
+	}
+
+	public double getDistToPointOfInterest() {
+		return distToPointOfInterest;
+	}
+
+	public void setDistToPointOfInterest(double distToPointOfInterest) {
+		this.distToPointOfInterest = distToPointOfInterest;
+	}
+
 	public void save() {
 		LocalPlan.getStaticDatabase().save(this);
 	}
 
 	public static Parcel getParcel(String world, String parcelName) {
-		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", world+"::"+parcelName).findUnique();
+		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", world + "::" + parcelName).findUnique();
 	}
 
 	public static Parcel getParcel(String world, String parcelName, Player player) {
-		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId",parcelName).eq("playerOwner",player.getName()).findUnique();
+		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId", parcelName).eq("owner", player.getName()).findUnique();
 	}
 
 	public void delete() {
 		LocalPlan.getStaticDatabase().delete(this);
 	}
+
 }

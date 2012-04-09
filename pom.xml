@@ -58,6 +58,12 @@
 			<!-- mvn install:install-file -Dfile=WorldEdit.jar -DgroupId=com.sk89q 
 				-DartifactId=worldedit -Dversion=5.3-SNAPSHOT -Dpackaging=jar -->
 		</dependency>
+		<dependency>
+			<groupId>org.dynmap</groupId>
+			<artifactId>DynmapCoreAPI</artifactId>
+			<version>[0.28,)</version>
+		</dependency>
+		
 	</dependencies>
 	<build>
 		<sourceDirectory>${basedir}/src/main/java</sourceDirectory>
