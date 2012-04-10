@@ -17,6 +17,7 @@ import com.avaje.ebean.validation.NotNull;
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class Parcel.
  * 
@@ -30,27 +31,42 @@ public class Parcel {
 	/** The plugin. */
 	static LocalPlan plugin;
 
+	/**
+	 * The Enum buyStatusTypes.
+	 */
 	public enum buyStatusTypes {
+		
+		/** The ANY. */
 		@EnumValue("ANY")
 		ANY,
 
+		/** The BUYABLE. */
 		@EnumValue("BUYABLE")
 		BUYABLE,
 
+		/** The UNBUYABLE. */
 		@EnumValue("UNBUYABLE")
 		UNBUYABLE,
 	}
 
+	/**
+	 * The Enum ownerTypes.
+	 */
 	public enum ownerTypes {
+		
+		/** The ANY. */
 		@EnumValue("ANY")
 		ANY,
 
+		/** The STATE. */
 		@EnumValue("STATE")
 		STATE,
 
+		/** The FACTION. */
 		@EnumValue("FACTION")
 		FACTION,
 
+		/** The PLAYER. */
 		@EnumValue("PLAYER")
 		PLAYER,
 	}
@@ -75,10 +91,12 @@ public class Parcel {
 	@Length(max = 100)
 	private String owner = "";
 
+	/** The point of interest. */
 	@NotNull
 	@Length(max = 100)
 	private String pointOfInterest;
 
+	/** The dist to point of interest. */
 	@NotNull
 	@Length(max = 100)
 	private double distToPointOfInterest;
@@ -93,8 +111,10 @@ public class Parcel {
 	@Length(min = 1)
 	private int surface = 1;
 
+	/** The buy status. */
 	private buyStatusTypes buyStatus = buyStatusTypes.BUYABLE;
 
+	/** The owner type. */
 	private ownerTypes ownerType = ownerTypes.STATE;
 
 	/**
@@ -104,6 +124,12 @@ public class Parcel {
 		plugin = LocalPlan.getInstance();
 	}
 
+	/**
+	 * Instantiates a new parcel.
+	 *
+	 * @param worldName the world name
+	 * @param region the region
+	 */
 	public Parcel(String worldName, ProtectedRegion region){
 		plugin = LocalPlan.getInstance();
 		String regionId = region.getId();
@@ -117,6 +143,12 @@ public class Parcel {
 		this.setPriceAndSurface(world,region);
 	}
 	
+	/**
+	 * Sets the price and surface.
+	 *
+	 * @param worldName the world name
+	 * @param region the region
+	 */
 	public void setPriceAndSurface(String worldName,ProtectedRegion region){
 		double maxDistance = 1024*1024;
 		double dist = 0;
@@ -224,15 +256,27 @@ public class Parcel {
 		this.surface = surface;
 	}
 
+	/**
+	 * Gets the region id.
+	 *
+	 * @return the region id
+	 */
 	public String getRegionId() {
 		return regionId;
 	}
 
+	/**
+	 * Sets the region id.
+	 *
+	 * @param regionId the new region id
+	 */
 	public void setRegionId(String regionId) {
 		this.regionId = regionId;
 	}
 
 	/**
+	 * Gets the owner.
+	 *
 	 * @return the owner
 	 */
 	public String getOwner() {
@@ -240,14 +284,17 @@ public class Parcel {
 	}
 
 	/**
-	 * @param owner
-	 *            the owner to set
+	 * Sets the owner.
+	 *
+	 * @param owner the owner to set
 	 */
 	public void setOwner(String owner) {
 		this.owner = owner;
 	}
 
 	/**
+	 * Gets the buy status.
+	 *
 	 * @return the buyStatus
 	 */
 	public buyStatusTypes getBuyStatus() {
@@ -255,22 +302,35 @@ public class Parcel {
 	}
 
 	/**
-	 * @param buyStatus
-	 *            the buyStatus to set
+	 * Sets the buy status.
+	 *
+	 * @param buyStatus the buyStatus to set
 	 */
 	public void setBuyStatus(buyStatusTypes buyStatus) {
 		this.buyStatus = buyStatus;
 	}
 
+	/**
+	 * Gets the point of interest.
+	 *
+	 * @return the point of interest
+	 */
 	public String getPointOfInterest() {
 		return pointOfInterest;
 	}
 
+	/**
+	 * Sets the point of interest.
+	 *
+	 * @param pointOfInterest the new point of interest
+	 */
 	public void setPointOfInterest(String pointOfInterest) {
 		this.pointOfInterest = pointOfInterest;
 	}
 
 	/**
+	 * Gets the owner type.
+	 *
 	 * @return the ownerType
 	 */
 	public ownerTypes getOwnerType() {
@@ -278,33 +338,65 @@ public class Parcel {
 	}
 
 	/**
-	 * @param ownerType
-	 *            the ownerType to set
+	 * Sets the owner type.
+	 *
+	 * @param ownerType the ownerType to set
 	 */
 	public void setOwnerType(ownerTypes ownerType) {
 		this.ownerType = ownerType;
 	}
 
+	/**
+	 * Gets the dist to point of interest.
+	 *
+	 * @return the dist to point of interest
+	 */
 	public double getDistToPointOfInterest() {
 		return distToPointOfInterest;
 	}
 
+	/**
+	 * Sets the dist to point of interest.
+	 *
+	 * @param distToPointOfInterest the new dist to point of interest
+	 */
 	public void setDistToPointOfInterest(double distToPointOfInterest) {
 		this.distToPointOfInterest = distToPointOfInterest;
 	}
 
+	/**
+	 * Save.
+	 */
 	public void save() {
 		LocalPlan.getStaticDatabase().save(this);
 	}
 
+	/**
+	 * Gets the parcel.
+	 *
+	 * @param world the world
+	 * @param parcelName the parcel name
+	 * @return the parcel
+	 */
 	public static Parcel getParcel(String world, String parcelName) {
 		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", world + "::" + parcelName).findUnique();
 	}
 
+	/**
+	 * Gets the parcel.
+	 *
+	 * @param world the world
+	 * @param parcelName the parcel name
+	 * @param player the player
+	 * @return the parcel
+	 */
 	public static Parcel getParcel(String world, String parcelName, Player player) {
 		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId", parcelName).eq("owner", player.getName()).findUnique();
 	}
 
+	/**
+	 * Delete.
+	 */
 	public void delete() {
 		LocalPlan.getStaticDatabase().delete(this);
 	}

@@ -26,6 +26,7 @@ import org.dynmap.markers.MarkerSet;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommand;
 import org.micoli.minecraft.bukkit.QDCommandException;
+import org.micoli.minecraft.bukkit.QDCommandUsageException;
 import org.micoli.minecraft.localPlan.entities.InterestPoint;
 import org.micoli.minecraft.localPlan.entities.Parcel;
 import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
@@ -58,6 +59,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class LocalPlan.
  */
@@ -78,13 +80,19 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The worldedit plugin. */
 	private WorldEditPlugin worldEditPlugin;
 
+	/** The dynmap plugin. */
 	DynmapCommonAPI dynmapPlugin;
 	
+	/** The marker default price. */
 	public double markerDefaultPrice = 50;
+	
+	/** The marker maximum distance. */
 	public double markerMaximumDistance = 1000;
 
 	/** The preview blocks. */
 	private HashMap<String, List<Block>> previewBlocks = new HashMap<String, List<Block>>();
+	
+	/** The interest points. */
 	private HashMap<String, ArrayList<InterestPoint>> interestPoints;
 
 	/**
@@ -139,13 +147,11 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * List parcels.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param owner
-	 *            the owner
-	 * @param status
-	 *            the status
+	 *
+	 * @param player the player
+	 * @param owner the owner
+	 * @param buyStatus the buy status
+	 * @param ownerType the owner type
 	 */
 	public void listParcels(Player player, String owner, buyStatusTypes buyStatus, ownerTypes ownerType) {
 		String ownerArg = owner;
@@ -180,10 +186,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 	}
 	
+	/**
+	 * Initialize interests point.
+	 */
 	public void initializeInterestsPoint(){
 		interestPoints = new HashMap<String, ArrayList<InterestPoint>>();
 
-		MarkerSet localPlanMarkerSet = dynmapPlugin.getMarkerAPI().getMarkerSet("LocalPlan");
+		MarkerSet localPlanMarkerSet = dynmapPlugin.getMarkerAPI().getMarkerSet("LocalPlanPOI");
 		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
 		Pattern pattern = Pattern.compile("-(\\d+(\\.\\d+)?)$");
 		while (localPlanMarkerSetIterator.hasNext()) {
@@ -279,12 +288,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Creates the parcel.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param id
-	 *            the id
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
 	 */
 	public void createParcel(Player player, String parcelName) throws Exception {
 		if (!ProtectedRegion.isValidId(parcelName)) {
@@ -413,11 +420,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Teleport the player to parcel.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param id
-	 *            the id
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
 	 */
 	public void teleportToParcel(Player player, String parcelName) {
 		World w = player.getWorld();
@@ -433,14 +438,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Allocate parcel.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param parcelName
-	 *            the parcel name
-	 * @param newOwner
-	 *            the new owner
-	 * @throws QDCommandException
+	 *
+	 * @param player the player
+	 * @param WorldId the world id
+	 * @param parcelName the parcel name
+	 * @param newOwner the new owner
+	 * @throws QDCommandException the qD command exception
 	 */
 	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(WorldId, parcelName);
@@ -464,14 +467,11 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Sets the buyable.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param parcelName
-	 *            the parcel name
-	 * @param priceString
-	 *            the price string
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @param priceString the price string
+	 * @throws Exception the exception
 	 */
 	public void setBuyable(Player player, String parcelName, String priceString) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName, player);
@@ -491,12 +491,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Sets the unbuyable.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param parcelName
-	 *            the parcel name
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
 	 */
 	public void setUnbuyable(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName, player);
@@ -510,12 +508,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Buy parcel.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param parcelName
-	 *            the parcel name
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
 	 */
 	public void buyParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
@@ -539,12 +535,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Manage parcel member.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param args
-	 *            the args
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param args the args
+	 * @throws Exception the exception
 	 */
 	public void manageParcelMember(Player player, String[] args) throws Exception {
 		String parcelName = args[1];
@@ -561,12 +555,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Show parcel.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param parcelName
-	 *            the parcel name
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
 	 */
 	public void showParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
@@ -617,12 +609,10 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Hide parcel.
-	 * 
-	 * @param player
-	 *            the player
-	 * @param parcelName
-	 *            the parcel name
-	 * @throws Exception
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
 	 */
 	public void hideParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
@@ -647,6 +637,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
+	 * Gets the interest points.
+	 *
 	 * @return the interestPoints
 	 */
 	public HashMap<String, ArrayList<InterestPoint>> getInterestPoints() {
@@ -655,26 +647,51 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Gets the parcel.
-	 * 
-	 * @param region
-	 *            the region
+	 *
+	 * @param worldId the world id
+	 * @param parcelName the parcel name
 	 * @return the parcel
 	 */
 	public Parcel getParcel(String worldId, String parcelName) {
 		return Parcel.getParcel(worldId, parcelName);
 	}
 
-	@QDCommand(aliases = "commentsOn", permissions = {})
+	/**
+	 * Cmd_comments on.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "commentsOn", permissions = {},usage="",description="enable plugin comments")
 	public void cmd_commentsOn(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, true);
 	}
 
-	@QDCommand(aliases = "commentsOff", permissions = {})
+	/**
+	 * Cmd_comments off.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "commentsOff", permissions = {},usage="",description="disabled plugin comments")
 	public void cmd_commentsOff(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, false);
 	}
 
-	@QDCommand(aliases = "list", permissions = { "" })
+	/**
+	 * Cmd_list.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "list", permissions = { "localplan.list" },usage="[<player>]",description="list all parcel belonging to a given player, if no player given then use the current player")
 	public void cmd_list(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		if (args.length == 1) {
 			this.listParcels((Player) sender, ((Player) sender).getName(), buyStatusTypes.ANY, ownerTypes.ANY);
@@ -687,70 +704,182 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 	}
 
-	@QDCommand(aliases = "listall", permissions = {})
+	/**
+	 * Cmd_listall.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "listall", permissions = {"localplan.listall"},usage="",description="list all parcels")
 	public void cmd_listall(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", buyStatusTypes.ANY, ownerTypes.ANY);
 	}
 
-	@QDCommand(aliases = "listavailable", permissions = {})
+	/**
+	 * Cmd_listavailable.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "listavailable", permissions = {"localplan.listavailable"},usage="",description="list all parcels with no owner")
 	public void cmd_listavailable(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "", buyStatusTypes.ANY, ownerTypes.ANY);
 	}
 
-	@QDCommand(aliases = "listbuyable", permissions = {})
+	/**
+	 * Cmd_listbuyable.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "listbuyable", permissions = {"localplan.listbuyable"},usage="",description="list all buyable parcels")
 	public void cmd_listbuyable(CommandSender sender, Command command, String label, String[] args) {
 		this.listParcels((Player) sender, "__all__", buyStatusTypes.BUYABLE, ownerTypes.ANY);
 	}
 
-	@QDCommand(aliases = "buyable", permissions = {})
+	/**
+	 * Cmd_buyable.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "buyable", permissions = {"localplan.setbuyable"},usage="<parcelName> <price>",description="put a parcel on the market, set it as buyable to the given price")
 	public void cmd_buyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.setBuyable((Player) sender, args[1], args[2]);
 	}
 
-	@QDCommand(aliases = "unbuyable", permissions = {})
+	/**
+	 * Cmd_unbuyable.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "unbuyable", permissions = {"localplan.setunbuyable"},usage="<parcelName>",description="set a parcel unbuyable, disallow to buy it")
 	public void cmd_unbuyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.setUnbuyable((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "buy", permissions = {})
+	/**
+	 * Cmd_buy.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "buy", permissions = {"localplan.buy"},usage="<parcelName>",description="buy a parcel if it is buyable, use economy")
 	public void cmd_buy(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.buyParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "tp", permissions = {})
+	/**
+	 * Cmd_tp.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "tp", permissions = {"localplan.teleport"},usage="<parcelName>",description="Teleport the player to the center of the parcel")
 	public void cmd_tp(CommandSender sender, Command command, String label, String[] args) {
 		this.teleportToParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "create", permissions = {})
-	public void cmd_define(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	/**
+	 * Cmd_create.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "create", permissions = {"localplan.create"},usage="<parcelName>",description="define a region and the parcel affected to it, no owner attributed to STATE")
+	public void cmd_create(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.createParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "allocate", permissions = {})
+	/**
+	 * Cmd_allocate.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws QDCommandException the qD command exception
+	 */
+	@QDCommand(aliases = "allocate", permissions = {"localplan.allocate"},usage="<parcelName> <newOwner>",description="allocate a parcel to an owner without economy")
 	public void cmd_allocate(CommandSender sender, Command command, String label, String[] args) throws QDCommandException {
 		if (args.length != 3) {
-			throw new QDCommandException("usage : /lp allocate parcelName playerName");
+			throw new QDCommandUsageException("need 3 arguments");
 		}
 		this.allocateParcel((Player) sender, ((Player) sender).getWorld().getName(), args[1], args[2]);
 	}
 
-	@QDCommand(aliases = "member", permissions = {})
+	/**
+	 * Cmd_member.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "member", permissions = {"localplan.member.set"},usage="<memberName>",description="change the member of a parcel")
 	public void cmd_member(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.manageParcelMember((Player) sender, args);
 	}
 
-	@QDCommand(aliases = "show", permissions = {})
+	/**
+	 * Cmd_show.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "show", permissions = {"localplan.show"},usage="<parcelName>",description="show the border of a parcel in fence")
 	public void cmd_show(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.showParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "hide", permissions = {})
+	/**
+	 * Cmd_hide.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	@QDCommand(aliases = "hide", permissions = {"localplan.hide"},usage="<parcelName>",description="hide the border of a parcel")
 	public void cmd_hide(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		this.hideParcel((Player) sender, args[1]);
 	}
 
-	@QDCommand(aliases = "scan", permissions = {})
+	/**
+	 * Cmd_scan.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 */
+	@QDCommand(aliases = "scan", permissions = {"localplan.scan"},usage="",description="rescan region and add parcels")
 	public void cmd_scan(CommandSender sender, Command command, String label, String[] args) {
 		this.initalizeRegions();
 	}
