@@ -73,7 +73,7 @@
               <artifactSet>
                 <includes>
                   <include>org.micoli.minecraft:morg-utils:jar:*</include>
-                  <include>com.lennardf1989:bukkitex</include>
+                  <include>com.lennardf1989:bukkitex:jar:*</include>
                 </includes>
               </artifactSet>
               <filters>

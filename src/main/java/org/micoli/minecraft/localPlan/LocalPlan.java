@@ -128,8 +128,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		markerMaximumDistance = configFile.getDouble("marker.defaultPrice", 300);
 		saveConfig();
 
-		initializeInterestsPoint();
-		initalizeRegions();
+		if(initializeInterestsPoint()){
+			initalizeRegions();
+		}
 
 		executor = new LocalPlanCommandManager(this, new Class[] { getClass() });
 	}
@@ -189,10 +190,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/**
 	 * Initialize interests point.
 	 */
-	public void initializeInterestsPoint(){
+	public boolean initializeInterestsPoint(){
 		interestPoints = new HashMap<String, ArrayList<InterestPoint>>();
 
 		MarkerSet localPlanMarkerSet = dynmapPlugin.getMarkerAPI().getMarkerSet("LocalPlanPOI");
+		if (localPlanMarkerSet == null){
+			ServerLogger.log("No Markers  LocalPlanPOI");
+			return false;
+		}
 		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
 		Pattern pattern = Pattern.compile("-(\\d+(\\.\\d+)?)$");
 		while (localPlanMarkerSetIterator.hasNext()) {
@@ -206,6 +211,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 				ServerLogger.log("Markers : %s ", marker.getLabel());
 			}
 		}
+		return true;
 	}
 
 	/**
@@ -881,6 +887,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	@QDCommand(aliases = "scan", permissions = {"localplan.scan"},usage="",description="rescan region and add parcels")
 	public void cmd_scan(CommandSender sender, Command command, String label, String[] args) {
-		this.initalizeRegions();
+		if(initializeInterestsPoint()){
+			initalizeRegions();
+		}
 	}
 }
