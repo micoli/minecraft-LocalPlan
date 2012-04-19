@@ -22,6 +22,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.dynmap.DynmapCommonAPI;
 import org.dynmap.markers.Marker;
+import org.dynmap.markers.MarkerIcon;
 import org.dynmap.markers.MarkerSet;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommand;
@@ -84,16 +85,19 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	DynmapCommonAPI dynmapPlugin;
 	
 	/** The marker default price. */
-	public double markerDefaultPrice = 50;
+	public double markerDefaultPrice = 300;
 	
 	/** The marker maximum distance. */
 	public double markerMaximumDistance = 1000;
+
+	/** The markerset name for POI. */
+	public String markersetName = "LocalPlanPOI";
 
 	/** The preview blocks. */
 	private HashMap<String, List<Block>> previewBlocks = new HashMap<String, List<Block>>();
 	
 	/** The interest points. */
-	private HashMap<String, ArrayList<InterestPoint>> interestPoints;
+	private HashMap<String, HashMap<String,InterestPoint>> interestPoints;
 
 	/**
 	 * Gets the single instance of LocalPlan.
@@ -121,11 +125,15 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		worldEditPlugin = PluginEnvironment.getWorldEdit(getServer());
 		dynmapPlugin = (DynmapCommonAPI) getServer().getPluginManager().getPlugin("dynmap");
 
-		configFile.set("marker.defaultPrice", configFile.getDouble("marker.defaultPrice", 50));
-		markerDefaultPrice = configFile.getDouble("marker.defaultPrice", 50);
+		configFile.set("PointOfInterest.defaultPrice", configFile.getDouble("PointOfInterest.defaultPrice", getMarkerDefaultPrice()));
+		setMarkerDefaultPrice(configFile.getDouble("PointOfInterest.defaultPrice"));
+
+		configFile.set("PointOfInterest.markerMaximumDistance", configFile.getDouble("PointOfInterest.markerMaximumDistance", getMarkerMaximumDistance()));
+		setMarkerMaximumDistance(configFile.getDouble("PointOfInterest.markerMaximumDistance"));
 		
-		configFile.set("marker.markerMaximumDistance", configFile.getDouble("marker.markerMaximumDistance", 300));
-		markerMaximumDistance = configFile.getDouble("marker.defaultPrice", 300);
+		configFile.set("PointOfInterest.markersetName", configFile.getString("PointOfInterest.markersetName", getMarkersetName()));
+		setMarkersetName(configFile.getString ("PointOfInterest.markersetName"));
+		
 		saveConfig();
 
 		if(initializeInterestsPoint()){
@@ -145,6 +153,48 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		list.add(Parcel.class);
 		return list;
 	};
+
+	/**
+	 * @return the markerDefaultPrice
+	 */
+	public double getMarkerDefaultPrice() {
+		return markerDefaultPrice;
+	}
+
+	/**
+	 * @param markerDefaultPrice the markerDefaultPrice to set
+	 */
+	public void setMarkerDefaultPrice(double markerDefaultPrice) {
+		this.markerDefaultPrice = markerDefaultPrice;
+	}
+
+	/**
+	 * @return the markerMaximumDistance
+	 */
+	public double getMarkerMaximumDistance() {
+		return markerMaximumDistance;
+	}
+
+	/**
+	 * @param markerMaximumDistance the markerMaximumDistance to set
+	 */
+	public void setMarkerMaximumDistance(double markerMaximumDistance) {
+		this.markerMaximumDistance = markerMaximumDistance;
+	}
+
+	/**
+	 * @return the markersetName
+	 */
+	public String getMarkersetName() {
+		return markersetName;
+	}
+
+	/**
+	 * @param markersetName the markersetName to set
+	 */
+	public void setMarkersetName(String markersetName) {
+		this.markersetName = markersetName;
+	}
 
 	/**
 	 * List parcels.
@@ -191,23 +241,26 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * Initialize interests point.
 	 */
 	public boolean initializeInterestsPoint(){
-		interestPoints = new HashMap<String, ArrayList<InterestPoint>>();
-
-		MarkerSet localPlanMarkerSet = dynmapPlugin.getMarkerAPI().getMarkerSet("LocalPlanPOI");
-		if (localPlanMarkerSet == null){
-			ServerLogger.log("No Markers  LocalPlanPOI");
-			return false;
-		}
-		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
 		Pattern pattern = Pattern.compile("-(\\d+(\\.\\d+)?)$");
+
+		interestPoints = new HashMap<String, HashMap<String,InterestPoint>>();
+
+		MarkerSet localPlanMarkerSet = dynmapPlugin.getMarkerAPI().getMarkerSet(getMarkersetName());
+		
+		if (localPlanMarkerSet == null){
+			ServerLogger.log("Adding Point Of Interest markerset :" + getMarkersetName());
+			localPlanMarkerSet = dynmapPlugin.getMarkerAPI().createMarkerSet(getMarkersetName(), getMarkersetName(), null, true);
+		}
+
+		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
 		while (localPlanMarkerSetIterator.hasNext()) {
 			Marker marker = localPlanMarkerSetIterator.next();
 			Matcher matcher = pattern.matcher(marker.getLabel());
 			if (matcher.find()) {
 				if (!interestPoints.containsKey(marker.getWorld())) {
-					interestPoints.put(marker.getWorld(), new ArrayList<InterestPoint>());
+					interestPoints.put(marker.getWorld(), new HashMap<String,InterestPoint>());
 				}
-				interestPoints.get(marker.getWorld()).add(new InterestPoint(marker.getWorld(), marker.getMarkerSet(), marker.getLabel(), matcher.group().substring(1),new BlockVector2D( marker.getX(),marker.getZ())));
+				interestPoints.get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getMarkerSet(), marker.getLabel(), matcher.group().substring(1),new BlockVector2D( marker.getX(),marker.getZ())));
 				ServerLogger.log("Markers : %s ", marker.getLabel());
 			}
 		}
@@ -495,6 +548,33 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
 	}
 
+	public void addPOI(Player player, String poiName, String icon, String priceString) throws Exception {
+		if (this.getInterestPoints().get(player.getWorld().getName())==null){
+			this.getInterestPoints().put(player.getWorld().getName(),new HashMap<String,InterestPoint>());
+		}
+		Marker existingMarker = null;
+		try {
+			existingMarker = dynmapPlugin.getMarkerAPI().getMarkerSet(getMarkersetName()).findMarker(poiName);
+		} catch (Exception e) {
+		}
+		if (existingMarker!=null || this.getInterestPoints().get(player.getWorld().getName()).containsKey(poiName)){
+			throw new QDCommandException("POI already exists");
+		}
+		Scanner scanner = new Scanner(priceString);
+		if (!scanner.hasNextDouble()) {
+			throw new QDCommandException("Price not found or not the good format 99.9");
+		}
+		double price = scanner.nextDouble();
+		MarkerIcon markerIcon = dynmapPlugin.getMarkerAPI().getMarkerIcon(icon);
+		if(markerIcon == null){
+			throw new QDCommandException("Icon does not exists");
+		}
+		Marker marker = dynmapPlugin.getMarkerAPI().getMarkerSet(getMarkersetName()).createMarker(poiName+"-"+String.format("%.2f",price), poiName+"-"+String.format("%.2f",price), player.getWorld().getName(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), markerIcon, true);
+		interestPoints.get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getMarkerSet(), poiName, String.format("%.2f",price),new BlockVector2D( marker.getX(),marker.getZ())));
+		
+		sendComments(player, ChatFormater.format("POI %s is now is created %f", poiName, price));
+	}
+
 	/**
 	 * Sets the unbuyable.
 	 *
@@ -647,7 +727,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *
 	 * @return the interestPoints
 	 */
-	public HashMap<String, ArrayList<InterestPoint>> getInterestPoints() {
+	public HashMap<String, HashMap<String,InterestPoint>> getInterestPoints() {
 		return interestPoints;
 	}
 
@@ -890,5 +970,20 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		if(initializeInterestsPoint()){
 			initalizeRegions();
 		}
+	}	/**
+	 * Cmd_POI.
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception 
+	 */
+	@QDCommand(aliases = "poi", permissions = {"localplan.poi"},usage="<POIname> <icon> <price>",description="manage Point of Interest")
+	public void cmd_POI(CommandSender sender, Command command, String label, String[] args) throws Exception {
+		if (args.length != 4) {
+			throw new QDCommandUsageException("need 3 arguments");
+		}
+		this.addPOI((Player) sender, args[1], args[2], args[3]);
 	}
 }

@@ -35,7 +35,7 @@ public class Parcel {
 	 * The Enum buyStatusTypes.
 	 */
 	public enum buyStatusTypes {
-		
+
 		/** The ANY. */
 		@EnumValue("ANY")
 		ANY,
@@ -53,7 +53,7 @@ public class Parcel {
 	 * The Enum ownerTypes.
 	 */
 	public enum ownerTypes {
-		
+
 		/** The ANY. */
 		@EnumValue("ANY")
 		ANY,
@@ -126,56 +126,67 @@ public class Parcel {
 
 	/**
 	 * Instantiates a new parcel.
-	 *
-	 * @param worldName the world name
-	 * @param region the region
+	 * 
+	 * @param worldName
+	 *            the world name
+	 * @param region
+	 *            the region
 	 */
-	public Parcel(String worldName, ProtectedRegion region){
+	public Parcel(String worldName, ProtectedRegion region) {
 		plugin = LocalPlan.getInstance();
 		String regionId = region.getId();
-
 
 		this.setId(worldName + "::" + regionId);
 		this.setWorld(worldName);
 		this.setRegionId(regionId);
 		this.setOwner("");
 		this.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
-		this.setPriceAndSurface(world,region);
+		this.setPriceAndSurface(world, region);
 	}
-	
+
 	/**
 	 * Sets the price and surface.
-	 *
-	 * @param worldName the world name
-	 * @param region the region
+	 * 
+	 * @param worldName
+	 *            the world name
+	 * @param region
+	 *            the region
 	 */
-	public void setPriceAndSurface(String worldName,ProtectedRegion region){
-		double maxDistance = 1024*1024;
+	public void setPriceAndSurface(String worldName, ProtectedRegion region) {
+		double maxDistance = 1024 * 1024;
 		double dist = 0;
-		ServerLogger.log("volume %d",region.volume());
+		ServerLogger.log("volume %d", region.volume());
 		int surf = LocalPlanUtils.getRegionSurface(region);
-		double price = plugin.markerDefaultPrice*surf;
+		double price = plugin.markerDefaultPrice * surf;
 
 		setPointOfInterest("");
 		setDistToPointOfInterest(0);
-		
+
 		BlockVector2D barycentre = LocalPlanUtils.getBarycentre(region);
-		Iterator<InterestPoint> interestPointIterator = plugin.getInterestPoints().get(worldName).iterator();
-		while (interestPointIterator.hasNext()) {
-			InterestPoint interestPoint = interestPointIterator.next();
-			dist = LocalPlanUtils.blockVector2DDistance(barycentre,interestPoint.blockVector2D);
-			if (dist<maxDistance){
-				maxDistance=dist;
-				setPointOfInterest(interestPoint.getLabel()); 
-				setDistToPointOfInterest(dist);
-				if (dist>plugin.markerMaximumDistance){
-					price = surf * interestPoint.price;
-				}else{
-					price = surf * (interestPoint.price-(interestPoint.price-plugin.markerDefaultPrice) / plugin.markerMaximumDistance*dist);
+		Iterator<String> interestPointIterator = null;
+		try {
+			interestPointIterator = plugin.getInterestPoints().get(worldName).keySet().iterator();
+		} catch (Exception e) {
+		}
+		if (interestPointIterator == null) {
+			price=0;
+		} else {
+			while (interestPointIterator.hasNext()) {
+				InterestPoint interestPoint = plugin.getInterestPoints().get(worldName).get(interestPointIterator.next());
+				dist = LocalPlanUtils.blockVector2DDistance(barycentre, interestPoint.blockVector2D);
+				if (dist < maxDistance) {
+					maxDistance = dist;
+					setPointOfInterest(interestPoint.getLabel());
+					setDistToPointOfInterest(dist);
+					if (dist > plugin.markerMaximumDistance) {
+						price = surf * interestPoint.price;
+					} else {
+						price = surf * (interestPoint.price - (interestPoint.price - plugin.markerDefaultPrice) / plugin.markerMaximumDistance * dist);
+					}
 				}
 			}
 		}
-		ServerLogger.log("===>%s %d,%f",region.getId(),surf,price);
+		ServerLogger.log("===>%s %d,%f", region.getId(), surf, price);
 		this.setPrice(Math.round(price));
 		this.setSurface(surf);
 	}
@@ -258,7 +269,7 @@ public class Parcel {
 
 	/**
 	 * Gets the region id.
-	 *
+	 * 
 	 * @return the region id
 	 */
 	public String getRegionId() {
@@ -267,8 +278,9 @@ public class Parcel {
 
 	/**
 	 * Sets the region id.
-	 *
-	 * @param regionId the new region id
+	 * 
+	 * @param regionId
+	 *            the new region id
 	 */
 	public void setRegionId(String regionId) {
 		this.regionId = regionId;
@@ -276,7 +288,7 @@ public class Parcel {
 
 	/**
 	 * Gets the owner.
-	 *
+	 * 
 	 * @return the owner
 	 */
 	public String getOwner() {
@@ -285,8 +297,9 @@ public class Parcel {
 
 	/**
 	 * Sets the owner.
-	 *
-	 * @param owner the owner to set
+	 * 
+	 * @param owner
+	 *            the owner to set
 	 */
 	public void setOwner(String owner) {
 		this.owner = owner;
@@ -294,7 +307,7 @@ public class Parcel {
 
 	/**
 	 * Gets the buy status.
-	 *
+	 * 
 	 * @return the buyStatus
 	 */
 	public buyStatusTypes getBuyStatus() {
@@ -303,8 +316,9 @@ public class Parcel {
 
 	/**
 	 * Sets the buy status.
-	 *
-	 * @param buyStatus the buyStatus to set
+	 * 
+	 * @param buyStatus
+	 *            the buyStatus to set
 	 */
 	public void setBuyStatus(buyStatusTypes buyStatus) {
 		this.buyStatus = buyStatus;
@@ -312,7 +326,7 @@ public class Parcel {
 
 	/**
 	 * Gets the point of interest.
-	 *
+	 * 
 	 * @return the point of interest
 	 */
 	public String getPointOfInterest() {
@@ -321,8 +335,9 @@ public class Parcel {
 
 	/**
 	 * Sets the point of interest.
-	 *
-	 * @param pointOfInterest the new point of interest
+	 * 
+	 * @param pointOfInterest
+	 *            the new point of interest
 	 */
 	public void setPointOfInterest(String pointOfInterest) {
 		this.pointOfInterest = pointOfInterest;
@@ -330,7 +345,7 @@ public class Parcel {
 
 	/**
 	 * Gets the owner type.
-	 *
+	 * 
 	 * @return the ownerType
 	 */
 	public ownerTypes getOwnerType() {
@@ -339,8 +354,9 @@ public class Parcel {
 
 	/**
 	 * Sets the owner type.
-	 *
-	 * @param ownerType the ownerType to set
+	 * 
+	 * @param ownerType
+	 *            the ownerType to set
 	 */
 	public void setOwnerType(ownerTypes ownerType) {
 		this.ownerType = ownerType;
@@ -348,7 +364,7 @@ public class Parcel {
 
 	/**
 	 * Gets the dist to point of interest.
-	 *
+	 * 
 	 * @return the dist to point of interest
 	 */
 	public double getDistToPointOfInterest() {
@@ -357,8 +373,9 @@ public class Parcel {
 
 	/**
 	 * Sets the dist to point of interest.
-	 *
-	 * @param distToPointOfInterest the new dist to point of interest
+	 * 
+	 * @param distToPointOfInterest
+	 *            the new dist to point of interest
 	 */
 	public void setDistToPointOfInterest(double distToPointOfInterest) {
 		this.distToPointOfInterest = distToPointOfInterest;
@@ -373,9 +390,11 @@ public class Parcel {
 
 	/**
 	 * Gets the parcel.
-	 *
-	 * @param world the world
-	 * @param parcelName the parcel name
+	 * 
+	 * @param world
+	 *            the world
+	 * @param parcelName
+	 *            the parcel name
 	 * @return the parcel
 	 */
 	public static Parcel getParcel(String world, String parcelName) {
@@ -384,10 +403,13 @@ public class Parcel {
 
 	/**
 	 * Gets the parcel.
-	 *
-	 * @param world the world
-	 * @param parcelName the parcel name
-	 * @param player the player
+	 * 
+	 * @param world
+	 *            the world
+	 * @param parcelName
+	 *            the parcel name
+	 * @param player
+	 *            the player
 	 * @return the parcel
 	 */
 	public static Parcel getParcel(String world, String parcelName, Player player) {
