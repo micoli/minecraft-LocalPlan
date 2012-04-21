@@ -1,0 +1,402 @@
+package org.micoli.minecraft.localPlan.managers;
+
+import static com.sk89q.worldguard.bukkit.BukkitUtil.toVector;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.micoli.minecraft.bukkit.QDCommandException;
+import org.micoli.minecraft.localPlan.LocalPlan;
+import org.micoli.minecraft.localPlan.LocalPlanUtils;
+import org.micoli.minecraft.localPlan.entities.Parcel;
+import org.micoli.minecraft.utils.BlockUtils;
+import org.micoli.minecraft.utils.ChatFormater;
+
+import com.avaje.ebean.Expression;
+import com.avaje.ebean.Query;
+import com.sk89q.worldedit.BlockVector;
+import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
+import com.sk89q.worldedit.bukkit.selections.Polygonal2DSelection;
+import com.sk89q.worldedit.bukkit.selections.Selection;
+import com.sk89q.worldguard.domains.DefaultDomain;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.UnsupportedIntersectionException;
+import com.sk89q.worldguard.protection.databases.ProtectionDatabaseException;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.InvalidFlagFormat;
+import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
+import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+
+public class ParcelManager {
+	
+	LocalPlan instance;
+	/** The internal array of parcels. */
+	public Map<String, Parcel> aParcel;
+
+	public ParcelManager(LocalPlan instance) {
+		this.instance = instance;
+		aParcel = new HashMap<String, Parcel>();
+		
+	}
+	
+	/**
+	 * Initalize regions.
+	 */
+	public void initalizeRegions() {
+		final int maxdepth = 10;
+		instance.logger.log("InitalizeRegions");
+		for (World w : instance.getServer().getWorlds()) {
+			String worldName = w.getName();
+			List<String> listRegions = new ArrayList<String>();
+			Map<?, Parcel> listParcels = instance.getStaticDatabase().find(Parcel.class).where().like("world", worldName).findMap();
+			instance.logger.log("Map %s (%d)", worldName, listParcels.size());
+
+			RegionManager rm = instance.getWorldGuardPlugin().getRegionManager(w);
+			if (rm == null)
+				continue;
+
+			Map<String, ProtectedRegion> regions = rm.getRegions();
+			for (ProtectedRegion pr : regions.values()) {
+				int depth = 1;
+				ProtectedRegion p = pr;
+				while (p.getParent() != null) {
+					depth++;
+					p = p.getParent();
+				}
+				if (depth > maxdepth) {
+					continue;
+				}
+				if (!pr.getId().equalsIgnoreCase("__global__")) {
+					instance.logger.log("W:%s,P:%s,O:%s,S:%d", worldName, pr.getId(), pr.getOwners().toPlayersString(), LocalPlanUtils.getRegionSurface(pr));
+					listRegions.add(pr.getId());
+					if (!listParcels.containsKey(worldName + "::" + pr.getId())) {
+						Parcel parcel = new Parcel(worldName, pr);
+						parcel.save();
+						instance.logger.log("Automatically adding %s::%s(%s)", worldName, pr.getId(), pr.getOwners().toPlayersString());
+					} else {
+						Parcel parcel = listParcels.get(worldName + "::" + pr.getId());
+						if (parcel.getSurface() != LocalPlanUtils.getRegionSurface(pr)) {
+							parcel.setPriceAndSurface(worldName, pr);
+							parcel.save();
+							instance.logger.log("Updating surface of  %s::%s(%d)", worldName, pr.getId(), parcel.getSurface());
+						}
+					}
+				}
+			}
+			instance.logger.log("List of deleted parcels");
+			Query<?> query = instance.getStaticDatabase().find(Parcel.class);
+			Expression exp = query.getExpressionFactory().in("regionId", listRegions);
+			@SuppressWarnings("unchecked")
+			Iterator<Parcel> listDeletedParcels = (Iterator<Parcel>) query.where().like("world", worldName).not(exp).findList().iterator();
+			while (listDeletedParcels.hasNext()) {
+				Parcel parcel = listDeletedParcels.next();
+				instance.logger.log("Automatically removing W:%s,P:%s", worldName, parcel.getRegionId());
+				parcel.delete();
+			}
+		}
+		instance.logger.log("EndInitalizeRegions");
+	}
+
+	/**
+	 * Gets the parcel around.
+	 * 
+	 * @param player
+	 *            the player
+	 * @return the parcel around
+	 */
+	public void getParcelAround(Player player) {
+		World w = player.getWorld();
+		Vector pt = toVector(player.getLocation());
+
+		ApplicableRegionSet set = instance.getWorldGuardPlugin().getRegionManager(w).getApplicableRegions(pt);
+
+		instance.logger.log("list %s %s", player.getName(), set.toString());
+		for (ProtectedRegion reg : set) {
+			instance.logger.log("%s %s", player.getName(), reg.getId());
+		}
+		instance.logger.log("--list %s", player.getName());
+	}
+
+	/**
+	 * Creates the parcel.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
+	 */
+	public void createParcel(Player player, String parcelName) throws Exception {
+		if (!ProtectedRegion.isValidId(parcelName)) {
+			throw new QDCommandException("Invalid region ID specified!");
+		}
+
+		if (parcelName.equalsIgnoreCase("__global__")) {
+			throw new QDCommandException("A region cannot be named __global__");
+		}
+
+		// Attempt to get the player's selection from WorldEdit
+		Selection sel = instance.getWorldEditPlugin().getSelection(player);
+
+		if (sel == null) {
+			throw new QDCommandException("Select a region with WorldEdit first.");
+		}
+
+		World w = sel.getWorld();
+		RegionManager mgr = instance.getWorldGuardPlugin().getGlobalRegionManager().get(w);
+		if (mgr.hasRegion(parcelName)) {
+			throw new QDCommandException("That region is already defined. Use redefine instead.");
+		}
+
+		ProtectedRegion region;
+
+		// Detect the type of region from WorldEdit
+		if (sel instanceof Polygonal2DSelection) {
+			Polygonal2DSelection polySel = (Polygonal2DSelection) sel;
+			region = new ProtectedPolygonalRegion(parcelName, polySel.getNativePoints(), 0, w.getMaxHeight());
+		} else if (sel instanceof CuboidSelection) {
+			BlockVector min = sel.getNativeMinimumPoint().setY(0).toBlockVector();
+			BlockVector max = sel.getNativeMaximumPoint().setY(w.getMaxHeight()).toBlockVector();
+			region = new ProtectedCuboidRegion(parcelName, min, max);
+			instance.logger.log("region %s %s %d",min.toString(),max.toString(), w.getMaxHeight());
+		} else {
+			throw new QDCommandException("The type of region selected in WorldEdit is unsupported in WorldGuard!");
+		}
+		List<ProtectedRegion> allregionslist = new ArrayList<ProtectedRegion>(mgr.getRegions().values());
+		List<ProtectedRegion> overlaps;
+
+		try {
+			overlaps = region.getIntersectingRegions(allregionslist);
+			if (!(overlaps == null || overlaps.isEmpty())) {
+				throw new QDCommandException("That region is overlapping an existing one.");
+			}
+		} catch (UnsupportedIntersectionException e) {
+			e.printStackTrace();
+		}
+		// Get the list of region owners
+		DefaultDomain own = new DefaultDomain();
+		own.addPlayer(player.getName());
+		region.setOwners(own);
+		setRegionFlag(player, region, "BUILD", "allow");
+
+		mgr.addRegion(region);
+		Parcel parcel = Parcel.getParcel(w.getName(), parcelName);
+		if(parcel==null){
+			parcel = new Parcel(w.getName(), region);
+		}else{
+			parcel.setPriceAndSurface(w.getName(), region);
+		}
+		parcel.save();
+
+		try {
+			mgr.save();
+			instance.sendComments(player, ChatColor.YELLOW + "Region saved as " + parcelName + ".", false);
+		} catch (ProtectionDatabaseException e) {
+			throw new QDCommandException("Failed to write regions: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Sets the flag.
+	 * 
+	 * @param <V>
+	 *            the value type
+	 * @param region
+	 *            the region
+	 * @param flag
+	 *            the flag
+	 * @param sender
+	 *            the sender
+	 * @param value
+	 *            the value
+	 * @throws InvalidFlagFormat
+	 *             the invalid flag format
+	 * @author sk89q
+	 */
+	public <V> void setFlag(ProtectedRegion region, Flag<V> flag, CommandSender sender, String value) throws InvalidFlagFormat {
+		region.setFlag(flag, flag.parseInput(instance.getWorldGuardPlugin(), sender, value));
+	}
+
+	/**
+	 * Sets the region flag.
+	 * 
+	 * @param player
+	 *            the player
+	 * @param region
+	 *            the region
+	 * @param flagName
+	 *            the flag name
+	 * @param flagValue
+	 *            the flag value
+	 * @author sk89q
+	 */
+	private void setRegionFlag(Player player, ProtectedRegion region, String flagName, String flagValue) {
+		Flag<?> foundFlag = null;
+		// Now time to find the flag!
+		for (Flag<?> flag : DefaultFlag.getFlags()) {
+			// Try to detect the flag
+			if (flag.getName().replace("-", "").equalsIgnoreCase(flagName)) {
+				foundFlag = flag;
+				break;
+			}
+		}
+
+		if (foundFlag != null) {
+			try {
+				setFlag(region, foundFlag, player, flagValue);
+			} catch (InvalidFlagFormat e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	/**
+	 * Teleport the player to parcel.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 */
+	public void teleportToParcel(Player player, String parcelName) {
+		World w = player.getWorld();
+		RegionManager rm = instance.getWorldGuardPlugin().getRegionManager(w);
+		ProtectedRegion region = rm.getRegion(parcelName);
+		if (region != null) {
+			final BlockVector min = region.getMinimumPoint();
+			final BlockVector max = region.getMaximumPoint();
+			Location dstLocation = BlockUtils.getTopPositionAtPos(new Location(w, (double) (min.getBlockX() + max.getBlockX()) / 2, (double) 0, (double) (min.getBlockZ() + max.getBlockZ()) / 2));
+			player.teleport(dstLocation);
+		}
+	}
+
+	/**
+	 * Allocate parcel.
+	 *
+	 * @param player the player
+	 * @param WorldId the world id
+	 * @param parcelName the parcel name
+	 * @param newOwner the new owner
+	 * @throws QDCommandException the qD command exception
+	 */
+	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) throws QDCommandException {
+		Parcel parcel = Parcel.getParcel(WorldId, parcelName);
+		if (parcel == null) {
+			throw new QDCommandException("Parcel not found");
+		}
+
+		RegionManager mgr = instance.getWorldGuardPlugin().getGlobalRegionManager().get(instance.getServer().getWorld(parcel.getWorld()));
+		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
+
+		DefaultDomain own = new DefaultDomain();
+		own.addPlayer(newOwner);
+		region.setOwners(own);
+
+		parcel.setOwner(newOwner);
+		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
+		parcel.save();
+
+		instance.sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
+	}
+
+	/**
+	 * Sets the buyable.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @param priceString the price string
+	 * @throws Exception the exception
+	 */
+	public void setBuyable(Player player, String parcelName, String priceString) throws Exception {
+		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
+		if (parcel == null) {
+			throw new QDCommandException("Parcel not found or doesn't belong to you");
+		}
+		Scanner scanner = new Scanner(priceString);
+		if (!scanner.hasNextDouble()) {
+			throw new QDCommandException("Price not found or not the good format 99.9");
+		}
+		double price = scanner.nextDouble();
+		parcel.setPrice(price);
+		parcel.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
+		parcel.save();
+		instance.sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
+	}
+
+
+	/**
+	 * Sets the unbuyable.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
+	 */
+	public void setUnbuyable(Player player, String parcelName) throws Exception {
+		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
+		if (parcel == null) {
+			throw new QDCommandException("Parcel not found or doesn't belong to you");
+		}
+		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
+		parcel.save();
+		instance.sendComments(player, ChatFormater.format("Parcel %s is now unbuyable ", parcelName));
+	}
+
+	/**
+	 * Buy parcel.
+	 *
+	 * @param player the player
+	 * @param parcelName the parcel name
+	 * @throws Exception the exception
+	 */
+	public void buyParcel(Player player, String parcelName) throws Exception {
+		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
+		if (parcel == null) {
+			throw new QDCommandException("Parcel not found");
+		}
+
+		if (parcel.getBuyStatus().equals(Parcel.buyStatusTypes.UNBUYABLE)) {
+			throw new QDCommandException("Parcel is not buyable");
+		}
+
+		if (parcel.getPrice() > instance.vaultEconomy.getBalance(player.getName())) {
+			throw new QDCommandException(ChatFormater.format("Not enough money to buy that parcel %f<%f", instance.vaultEconomy.getBalance(player.getName()), parcel.getPrice()));
+		}
+		instance.vaultEconomy.depositPlayer(parcel.getOwner(), parcel.getPrice());
+		instance.vaultEconomy.withdrawPlayer(player.getName(), parcel.getPrice());
+		allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName());
+		instance.sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
+
+	}
+
+	/**
+	 * Manage parcel member.
+	 *
+	 * @param player the player
+	 * @param args the args
+	 * @throws Exception the exception
+	 */
+	public void manageParcelMember(Player player, String[] args) throws Exception {
+		String parcelName = args[1];
+		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
+		if (parcel == null) {
+			throw new QDCommandException("Parcel not found");
+		}
+
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || instance.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+			throw new QDCommandException("You don't have right on that Parcel");
+		}
+		
+		instance.sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
+	}
+
+}

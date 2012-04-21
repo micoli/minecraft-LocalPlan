@@ -5,7 +5,6 @@ import java.util.List;
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class LocalPlanUtils.
  */

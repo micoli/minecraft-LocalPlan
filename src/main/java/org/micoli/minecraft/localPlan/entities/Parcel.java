@@ -9,7 +9,6 @@ import javax.persistence.Table;
 import org.bukkit.entity.Player;
 import org.micoli.minecraft.localPlan.LocalPlan;
 import org.micoli.minecraft.localPlan.LocalPlanUtils;
-import org.micoli.minecraft.utils.ServerLogger;
 
 import com.avaje.ebean.annotation.EnumValue;
 import com.avaje.ebean.validation.Length;
@@ -17,7 +16,6 @@ import com.avaje.ebean.validation.NotNull;
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class Parcel.
  * 
@@ -155,7 +153,7 @@ public class Parcel {
 	public void setPriceAndSurface(String worldName, ProtectedRegion region) {
 		double maxDistance = 1024 * 1024;
 		double dist = 0;
-		ServerLogger.log("volume %d", region.volume());
+		plugin.logger.log("volume %d", region.volume());
 		int surf = LocalPlanUtils.getRegionSurface(region);
 		double price = plugin.markerDefaultPrice * surf;
 
@@ -165,14 +163,14 @@ public class Parcel {
 		BlockVector2D barycentre = LocalPlanUtils.getBarycentre(region);
 		Iterator<String> interestPointIterator = null;
 		try {
-			interestPointIterator = plugin.getInterestPoints().get(worldName).keySet().iterator();
+			interestPointIterator = plugin.getInterestPointManager().getInterestPoints().get(worldName).keySet().iterator();
 		} catch (Exception e) {
 		}
 		if (interestPointIterator == null) {
 			price=0;
 		} else {
 			while (interestPointIterator.hasNext()) {
-				InterestPoint interestPoint = plugin.getInterestPoints().get(worldName).get(interestPointIterator.next());
+				InterestPoint interestPoint = plugin.getInterestPointManager().getInterestPoints().get(worldName).get(interestPointIterator.next());
 				dist = LocalPlanUtils.blockVector2DDistance(barycentre, interestPoint.blockVector2D);
 				if (dist < maxDistance) {
 					maxDistance = dist;
@@ -186,7 +184,7 @@ public class Parcel {
 				}
 			}
 		}
-		ServerLogger.log("===>%s %d,%f", region.getId(), surf, price);
+		plugin.logger.log("===>%s %d,%f", region.getId(), surf, price);
 		this.setPrice(Math.round(price));
 		this.setSurface(surf);
 	}
@@ -385,7 +383,7 @@ public class Parcel {
 	 * Save.
 	 */
 	public void save() {
-		LocalPlan.getStaticDatabase().save(this);
+		plugin.getStaticDatabase().save(this);
 	}
 
 	/**
@@ -398,7 +396,8 @@ public class Parcel {
 	 * @return the parcel
 	 */
 	public static Parcel getParcel(String world, String parcelName) {
-		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("id", world + "::" + parcelName).findUnique();
+		plugin.logger.log("%s",world);
+		return plugin.getStaticDatabase().find(Parcel.class).where().eq("id", world + "::" + parcelName).findUnique();
 	}
 
 	/**
@@ -413,14 +412,14 @@ public class Parcel {
 	 * @return the parcel
 	 */
 	public static Parcel getParcel(String world, String parcelName, Player player) {
-		return LocalPlan.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId", parcelName).eq("owner", player.getName()).findUnique();
+		return plugin.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId", parcelName).eq("owner", player.getName()).findUnique();
 	}
 
 	/**
 	 * Delete.
 	 */
 	public void delete() {
-		LocalPlan.getStaticDatabase().delete(this);
+		plugin.getStaticDatabase().delete(this);
 	}
 
 }
