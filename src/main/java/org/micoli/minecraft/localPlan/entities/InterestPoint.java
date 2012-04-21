@@ -6,7 +6,6 @@ import org.dynmap.markers.MarkerSet;
 
 import com.sk89q.worldedit.BlockVector2D;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class InterestPoint.
  */

@@ -19,7 +19,7 @@ import com.sk89q.worldedit.BlockVector2D;
 
 public class InterestPointManager {
 	
-	LocalPlan instance;
+	LocalPlan plugin;
 
 	/** The interest points. */
 	private HashMap<String, HashMap<String,InterestPoint>> interestPoints;
@@ -37,7 +37,7 @@ public class InterestPointManager {
 		this.interestPoints = interestPoints;
 	}
 	public InterestPointManager(LocalPlan instance) {
-		this.instance = instance;
+		this.plugin = instance;
 	}
 	/**
 	 * Initialize interests point.
@@ -47,11 +47,11 @@ public class InterestPointManager {
 
 		interestPoints = new HashMap<String, HashMap<String,InterestPoint>>();
 
-		MarkerSet localPlanMarkerSet = instance.getDynmapPlugin().getMarkerAPI().getMarkerSet(instance.getMarkersetName());
+		MarkerSet localPlanMarkerSet = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName());
 		
 		if (localPlanMarkerSet == null){
-			instance.logger.log("Adding Point Of Interest markerset :" + instance.getMarkersetName());
-			localPlanMarkerSet = instance.getDynmapPlugin().getMarkerAPI().createMarkerSet(instance.getMarkersetName(), instance.getMarkersetName(), null, true);
+			plugin.logger.log("Adding Point Of Interest markerset :" + plugin.getMarkersetName());
+			localPlanMarkerSet = plugin.getDynmapPlugin().getMarkerAPI().createMarkerSet(plugin.getMarkersetName(), plugin.getMarkersetName(), null, true);
 		}
 
 		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
@@ -63,7 +63,7 @@ public class InterestPointManager {
 					interestPoints.put(marker.getWorld(), new HashMap<String,InterestPoint>());
 				}
 				interestPoints.get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getMarkerSet(), marker.getLabel(), matcher.group().substring(1),new BlockVector2D( marker.getX(),marker.getZ())));
-				instance.logger.log("Markers : %s ", marker.getLabel());
+				plugin.logger.log("Markers : %s ", marker.getLabel());
 			}
 		}
 		return true;
@@ -75,7 +75,7 @@ public class InterestPointManager {
 		}
 		Marker existingMarker = null;
 		try {
-			existingMarker = instance.getDynmapPlugin().getMarkerAPI().getMarkerSet(instance.getMarkersetName()).findMarker(poiName);
+			existingMarker = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).findMarker(poiName);
 		} catch (Exception e) {
 		}
 		if (existingMarker!=null || getInterestPoints().get(player.getWorld().getName()).containsKey(poiName)){
@@ -86,14 +86,14 @@ public class InterestPointManager {
 			throw new QDCommandException("Price not found or not the good format 99.9");
 		}
 		double price = scanner.nextDouble();
-		MarkerIcon markerIcon = instance.getDynmapPlugin().getMarkerAPI().getMarkerIcon(icon);
+		MarkerIcon markerIcon = plugin.getDynmapPlugin().getMarkerAPI().getMarkerIcon(icon);
 		if(markerIcon == null){
 			throw new QDCommandException("Icon does not exists");
 		}
-		Marker marker = instance.getDynmapPlugin().getMarkerAPI().getMarkerSet(instance.getMarkersetName()).createMarker(poiName+"-"+String.format("%.2f",price), poiName+"-"+String.format("%.2f",price), player.getWorld().getName(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), markerIcon, true);
+		Marker marker = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).createMarker(poiName+"-"+String.format("%.2f",price), poiName+"-"+String.format("%.2f",price), player.getWorld().getName(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), markerIcon, true);
 		this.getInterestPoints().get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getMarkerSet(), poiName, String.format("%.2f",price),new BlockVector2D( marker.getX(),marker.getZ())));
 		
-		instance.sendComments(player, ChatFormater.format("POI %s is now is created %f", poiName, price));
+		plugin.sendComments(player, ChatFormater.format("POI %s is now is created %f", poiName, price));
 	}
 
 }

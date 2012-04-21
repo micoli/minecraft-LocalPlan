@@ -21,13 +21,13 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class PreviewBlockManager {
 	
-	LocalPlan instance;
+	LocalPlan plugin;
 
 	/** The preview blocks. */
 	private HashMap<String, List<Block>> previewBlocks = new HashMap<String, List<Block>>();
 
 	public PreviewBlockManager(LocalPlan instance) {
-		this.instance = instance;
+		this.plugin = instance;
 	}
 
 	 /* Show parcel.
@@ -41,7 +41,7 @@ public class PreviewBlockManager {
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found " + player.getWorld().toString() + "::" + parcelName);
 		}
-		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || instance.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		if (previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {
@@ -49,11 +49,11 @@ public class PreviewBlockManager {
 		}
 		List<Block> listBlock = new ArrayList<Block>();
 		previewBlocks.put(player.getWorld().getName() + "::" + parcel.getRegionId(), listBlock);
-		RegionManager mgr = instance.getWorldGuardPlugin().getGlobalRegionManager().get(instance.getServer().getWorld(parcel.getWorld()));
+		RegionManager mgr = plugin.getWorldGuardPlugin().getGlobalRegionManager().get(plugin.getServer().getWorld(parcel.getWorld()));
 		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
 
 		int nb = 0;
-		World world = instance.getServer().getWorld(parcel.getWorld());
+		World world = plugin.getServer().getWorld(parcel.getWorld());
 		List<BlockVector2D> points = region.getPoints();
 		if (points != null && points.size() > 0) {
 			BlockVector2D firstPoint = points.get(0);
@@ -69,7 +69,7 @@ public class PreviewBlockManager {
 					lastPoint = firstPoint;
 				} else {
 					BlockVector2D point = points.get(i);// pointIterator.next();
-					BlockUtils.drawLineOnTop(instance,new Location(world, lastPoint.getX(), 0, lastPoint.getZ()), new Location(world, point.getX(), 0, point.getZ()), Material.FENCE, listBlock);
+					BlockUtils.drawLineOnTop(plugin,new Location(world, lastPoint.getX(), 0, lastPoint.getZ()), new Location(world, point.getX(), 0, point.getZ()), Material.FENCE, listBlock);
 					// sendComments(player, ChatFormater.format("Point %f,%f",
 					// point.getX(), point.getZ()));
 					lastPoint = point;
@@ -78,8 +78,8 @@ public class PreviewBlockManager {
 			}
 			// sendComments(player, ChatFormater.format("Point %f,%f",
 			// firstPoint.getX(), firstPoint.getZ()));
-			BlockUtils.drawLineOnTop(instance,new Location(world, lastPoint.getX(), 0, lastPoint.getZ()), new Location(world, firstPoint.getX(), 0, firstPoint.getZ()), Material.FENCE, listBlock);
-			instance.sendComments(player, "Parcel shown");
+			BlockUtils.drawLineOnTop(plugin,new Location(world, lastPoint.getX(), 0, lastPoint.getZ()), new Location(world, firstPoint.getX(), 0, firstPoint.getZ()), Material.FENCE, listBlock);
+			plugin.sendComments(player, "Parcel shown");
 		}
 	}
 
@@ -95,13 +95,13 @@ public class PreviewBlockManager {
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found");
 		}
-		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || instance.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		if (!previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {
 			throw new QDCommandException("Parcel preview already shown");
 		}
-		World world = instance.getServer().getWorld(parcel.getWorld());
+		World world = plugin.getServer().getWorld(parcel.getWorld());
 		List<Block> listBlock = previewBlocks.get(player.getWorld().getName() + "::" + parcel.getRegionId());
 		for (Iterator<Block> pointIterator = listBlock.iterator(); pointIterator.hasNext();) {
 			Block block = pointIterator.next();
@@ -109,7 +109,7 @@ public class PreviewBlockManager {
 		}
 
 		previewBlocks.remove(player.getWorld().getName() + "::" + parcel.getRegionId());
-		instance.sendComments(player, "Parcel hidden");
+		plugin.sendComments(player, "Parcel hidden");
 	}
 
 }

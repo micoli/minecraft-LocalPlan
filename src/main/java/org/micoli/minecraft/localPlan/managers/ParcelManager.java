@@ -18,6 +18,8 @@ import org.micoli.minecraft.bukkit.QDCommandException;
 import org.micoli.minecraft.localPlan.LocalPlan;
 import org.micoli.minecraft.localPlan.LocalPlanUtils;
 import org.micoli.minecraft.localPlan.entities.Parcel;
+import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
+import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
 import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
 
@@ -42,12 +44,12 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class ParcelManager {
 	
-	LocalPlan instance;
+	LocalPlan plugin;
 	/** The internal array of parcels. */
 	public Map<String, Parcel> aParcel;
 
 	public ParcelManager(LocalPlan instance) {
-		this.instance = instance;
+		this.plugin = instance;
 		aParcel = new HashMap<String, Parcel>();
 		
 	}
@@ -57,14 +59,14 @@ public class ParcelManager {
 	 */
 	public void initalizeRegions() {
 		final int maxdepth = 10;
-		instance.logger.log("InitalizeRegions");
-		for (World w : instance.getServer().getWorlds()) {
+		plugin.logger.log("InitalizeRegions");
+		for (World w : plugin.getServer().getWorlds()) {
 			String worldName = w.getName();
 			List<String> listRegions = new ArrayList<String>();
-			Map<?, Parcel> listParcels = instance.getStaticDatabase().find(Parcel.class).where().like("world", worldName).findMap();
-			instance.logger.log("Map %s (%d)", worldName, listParcels.size());
+			Map<?, Parcel> listParcels = plugin.getStaticDatabase().find(Parcel.class).where().like("world", worldName).findMap();
+			plugin.logger.log("Map %s (%d)", worldName, listParcels.size());
 
-			RegionManager rm = instance.getWorldGuardPlugin().getRegionManager(w);
+			RegionManager rm = plugin.getWorldGuardPlugin().getRegionManager(w);
 			if (rm == null)
 				continue;
 
@@ -80,34 +82,79 @@ public class ParcelManager {
 					continue;
 				}
 				if (!pr.getId().equalsIgnoreCase("__global__")) {
-					instance.logger.log("W:%s,P:%s,O:%s,S:%d", worldName, pr.getId(), pr.getOwners().toPlayersString(), LocalPlanUtils.getRegionSurface(pr));
+					plugin.logger.log("W:%s,P:%s,O:%s,S:%d", worldName, pr.getId(), pr.getOwners().toPlayersString(), LocalPlanUtils.getRegionSurface(pr));
 					listRegions.add(pr.getId());
 					if (!listParcels.containsKey(worldName + "::" + pr.getId())) {
 						Parcel parcel = new Parcel(worldName, pr);
 						parcel.save();
-						instance.logger.log("Automatically adding %s::%s(%s)", worldName, pr.getId(), pr.getOwners().toPlayersString());
+						plugin.logger.log("Automatically adding %s::%s(%s)", worldName, pr.getId(), pr.getOwners().toPlayersString());
 					} else {
 						Parcel parcel = listParcels.get(worldName + "::" + pr.getId());
 						if (parcel.getSurface() != LocalPlanUtils.getRegionSurface(pr)) {
 							parcel.setPriceAndSurface(worldName, pr);
 							parcel.save();
-							instance.logger.log("Updating surface of  %s::%s(%d)", worldName, pr.getId(), parcel.getSurface());
+							plugin.logger.log("Updating surface of  %s::%s(%d)", worldName, pr.getId(), parcel.getSurface());
 						}
 					}
 				}
 			}
-			instance.logger.log("List of deleted parcels");
-			Query<?> query = instance.getStaticDatabase().find(Parcel.class);
+			plugin.logger.log("List of deleted parcels");
+			Query<?> query = plugin.getStaticDatabase().find(Parcel.class);
 			Expression exp = query.getExpressionFactory().in("regionId", listRegions);
 			@SuppressWarnings("unchecked")
 			Iterator<Parcel> listDeletedParcels = (Iterator<Parcel>) query.where().like("world", worldName).not(exp).findList().iterator();
 			while (listDeletedParcels.hasNext()) {
 				Parcel parcel = listDeletedParcels.next();
-				instance.logger.log("Automatically removing W:%s,P:%s", worldName, parcel.getRegionId());
+				plugin.logger.log("Automatically removing W:%s,P:%s", worldName, parcel.getRegionId());
 				parcel.delete();
 			}
 		}
-		instance.logger.log("EndInitalizeRegions");
+		plugin.logger.log("EndInitalizeRegions");
+	}
+	
+	/**
+	 * List parcels.
+	 * 
+	 * @param player
+	 *            the player
+	 * @param owner
+	 *            the owner
+	 * @param buyStatus
+	 *            the buy status
+	 * @param ownerType
+	 *            the owner type
+	 */
+	public void listParcels(Player player, String owner, buyStatusTypes buyStatus, ownerTypes ownerType) {
+		String ownerArg = owner;
+		String buyStatusArg = buyStatus.toString();
+		String ownerTypeArg = ownerType.toString();
+
+		if (owner.equalsIgnoreCase("__all__")) {
+			owner = "ALL";
+			ownerArg = "%";
+		}
+
+		if (buyStatus.equals(Parcel.buyStatusTypes.ANY)) {
+			buyStatusArg = "%";
+		}
+
+		if (ownerType.equals(Parcel.ownerTypes.ANY)) {
+			ownerTypeArg = "%";
+		}
+
+		// todo revoir l'ordre des resultats pour les alignements
+		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
+
+		if (parcelIterator.hasNext()) {
+			plugin.sendComments(player, ChatFormater.format("List of owned parcels"));
+			while (parcelIterator.hasNext()) {
+				Parcel re = parcelIterator.next();
+				plugin.sendComments(player, ChatFormater.format("%5s:%15s:%8s:%8s:%8s", re.getWorld(), re.getRegionId(), re.getBuyStatus(), re.getOwner(), re.getOwnerType()));
+			}
+			plugin.sendComments(player, ChatFormater.format("-----------"));
+		} else {
+			plugin.sendComments(player, ChatFormater.format("No parcels", owner));
+		}
 	}
 
 	/**
@@ -121,13 +168,13 @@ public class ParcelManager {
 		World w = player.getWorld();
 		Vector pt = toVector(player.getLocation());
 
-		ApplicableRegionSet set = instance.getWorldGuardPlugin().getRegionManager(w).getApplicableRegions(pt);
+		ApplicableRegionSet set = plugin.getWorldGuardPlugin().getRegionManager(w).getApplicableRegions(pt);
 
-		instance.logger.log("list %s %s", player.getName(), set.toString());
+		plugin.logger.log("list %s %s", player.getName(), set.toString());
 		for (ProtectedRegion reg : set) {
-			instance.logger.log("%s %s", player.getName(), reg.getId());
+			plugin.logger.log("%s %s", player.getName(), reg.getId());
 		}
-		instance.logger.log("--list %s", player.getName());
+		plugin.logger.log("--list %s", player.getName());
 	}
 
 	/**
@@ -147,14 +194,14 @@ public class ParcelManager {
 		}
 
 		// Attempt to get the player's selection from WorldEdit
-		Selection sel = instance.getWorldEditPlugin().getSelection(player);
+		Selection sel = plugin.getWorldEditPlugin().getSelection(player);
 
 		if (sel == null) {
 			throw new QDCommandException("Select a region with WorldEdit first.");
 		}
 
 		World w = sel.getWorld();
-		RegionManager mgr = instance.getWorldGuardPlugin().getGlobalRegionManager().get(w);
+		RegionManager mgr = plugin.getWorldGuardPlugin().getGlobalRegionManager().get(w);
 		if (mgr.hasRegion(parcelName)) {
 			throw new QDCommandException("That region is already defined. Use redefine instead.");
 		}
@@ -169,7 +216,7 @@ public class ParcelManager {
 			BlockVector min = sel.getNativeMinimumPoint().setY(0).toBlockVector();
 			BlockVector max = sel.getNativeMaximumPoint().setY(w.getMaxHeight()).toBlockVector();
 			region = new ProtectedCuboidRegion(parcelName, min, max);
-			instance.logger.log("region %s %s %d",min.toString(),max.toString(), w.getMaxHeight());
+			plugin.logger.log("region %s %s %d",min.toString(),max.toString(), w.getMaxHeight());
 		} else {
 			throw new QDCommandException("The type of region selected in WorldEdit is unsupported in WorldGuard!");
 		}
@@ -201,7 +248,7 @@ public class ParcelManager {
 
 		try {
 			mgr.save();
-			instance.sendComments(player, ChatColor.YELLOW + "Region saved as " + parcelName + ".", false);
+			plugin.sendComments(player, ChatColor.YELLOW + "Region saved as " + parcelName + ".", false);
 		} catch (ProtectionDatabaseException e) {
 			throw new QDCommandException("Failed to write regions: " + e.getMessage());
 		}
@@ -225,7 +272,7 @@ public class ParcelManager {
 	 * @author sk89q
 	 */
 	public <V> void setFlag(ProtectedRegion region, Flag<V> flag, CommandSender sender, String value) throws InvalidFlagFormat {
-		region.setFlag(flag, flag.parseInput(instance.getWorldGuardPlugin(), sender, value));
+		region.setFlag(flag, flag.parseInput(plugin.getWorldGuardPlugin(), sender, value));
 	}
 
 	/**
@@ -270,7 +317,7 @@ public class ParcelManager {
 	 */
 	public void teleportToParcel(Player player, String parcelName) {
 		World w = player.getWorld();
-		RegionManager rm = instance.getWorldGuardPlugin().getRegionManager(w);
+		RegionManager rm = plugin.getWorldGuardPlugin().getRegionManager(w);
 		ProtectedRegion region = rm.getRegion(parcelName);
 		if (region != null) {
 			final BlockVector min = region.getMinimumPoint();
@@ -295,7 +342,7 @@ public class ParcelManager {
 			throw new QDCommandException("Parcel not found");
 		}
 
-		RegionManager mgr = instance.getWorldGuardPlugin().getGlobalRegionManager().get(instance.getServer().getWorld(parcel.getWorld()));
+		RegionManager mgr = plugin.getWorldGuardPlugin().getGlobalRegionManager().get(plugin.getServer().getWorld(parcel.getWorld()));
 		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
 
 		DefaultDomain own = new DefaultDomain();
@@ -306,7 +353,7 @@ public class ParcelManager {
 		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
 
-		instance.sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
+		plugin.sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
 	}
 
 	/**
@@ -330,7 +377,7 @@ public class ParcelManager {
 		parcel.setPrice(price);
 		parcel.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
 		parcel.save();
-		instance.sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
+		plugin.sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
 	}
 
 
@@ -348,7 +395,7 @@ public class ParcelManager {
 		}
 		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
-		instance.sendComments(player, ChatFormater.format("Parcel %s is now unbuyable ", parcelName));
+		plugin.sendComments(player, ChatFormater.format("Parcel %s is now unbuyable ", parcelName));
 	}
 
 	/**
@@ -368,13 +415,13 @@ public class ParcelManager {
 			throw new QDCommandException("Parcel is not buyable");
 		}
 
-		if (parcel.getPrice() > instance.vaultEconomy.getBalance(player.getName())) {
-			throw new QDCommandException(ChatFormater.format("Not enough money to buy that parcel %f<%f", instance.vaultEconomy.getBalance(player.getName()), parcel.getPrice()));
+		if (parcel.getPrice() > plugin.vaultEconomy.getBalance(player.getName())) {
+			throw new QDCommandException(ChatFormater.format("Not enough money to buy that parcel %f<%f", plugin.vaultEconomy.getBalance(player.getName()), parcel.getPrice()));
 		}
-		instance.vaultEconomy.depositPlayer(parcel.getOwner(), parcel.getPrice());
-		instance.vaultEconomy.withdrawPlayer(player.getName(), parcel.getPrice());
+		plugin.vaultEconomy.depositPlayer(parcel.getOwner(), parcel.getPrice());
+		plugin.vaultEconomy.withdrawPlayer(player.getName(), parcel.getPrice());
 		allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName());
-		instance.sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
+		plugin.sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
 
 	}
 
@@ -392,11 +439,11 @@ public class ParcelManager {
 			throw new QDCommandException("Parcel not found");
 		}
 
-		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || instance.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		
-		instance.sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
+		plugin.sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
 	}
 
 }
