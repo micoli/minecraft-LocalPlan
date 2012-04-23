@@ -66,7 +66,11 @@ public class Parcel {
 
 		/** The PLAYER. */
 		@EnumValue("PLAYER")
-		PLAYER,
+		PLAYER, 
+		
+		/** The SYSTEM. */
+		@EnumValue("SYSTEM")
+		SYSTEM,
 	}
 
 	/** The id. */
@@ -396,7 +400,7 @@ public class Parcel {
 	 * @return the parcel
 	 */
 	public static Parcel getParcel(String world, String parcelName) {
-		plugin.logger.log("%s",world);
+		//plugin.logger.log("%s",world);
 		return plugin.getStaticDatabase().find(Parcel.class).where().eq("id", world + "::" + parcelName).findUnique();
 	}
 

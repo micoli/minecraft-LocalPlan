@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.dynmap.DynmapCommonAPI;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommand;
+import org.micoli.minecraft.bukkit.QDCommand.SenderType;
 import org.micoli.minecraft.bukkit.QDCommandException;
 import org.micoli.minecraft.bukkit.QDCommandUsageException;
 import org.micoli.minecraft.localPlan.entities.Parcel;
@@ -312,7 +313,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @throws Exception
 	 *             the exception
 	 */
-	@QDCommand(aliases = "list", permissions = { "localplan.list" }, usage = "[<player>]", description = "list all parcel belonging to a given player, if no player given then use the current player")
+	@QDCommand(aliases = "list", permissions = { "localplan.list" }, usage = "[<player>]", description = "list all parcel belonging to a given player, if no player given then use the current player",senderType=SenderType.BOTH)
 	public void cmd_list(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		if (args.length == 1) {
 			getParcelManager().listParcels((Player) sender, ((Player) sender).getName(), buyStatusTypes.ANY, ownerTypes.ANY);

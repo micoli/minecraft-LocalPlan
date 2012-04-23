@@ -43,7 +43,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class ParcelManager {
-	
+
 	LocalPlan plugin;
 	/** The internal array of parcels. */
 	public Map<String, Parcel> aParcel;
@@ -51,9 +51,8 @@ public class ParcelManager {
 	public ParcelManager(LocalPlan instance) {
 		this.plugin = instance;
 		aParcel = new HashMap<String, Parcel>();
-		
 	}
-	
+
 	/**
 	 * Initalize regions.
 	 */
@@ -111,7 +110,7 @@ public class ParcelManager {
 		}
 		plugin.logger.log("EndInitalizeRegions");
 	}
-	
+
 	/**
 	 * List parcels.
 	 * 
@@ -143,18 +142,39 @@ public class ParcelManager {
 		}
 
 		// todo revoir l'ordre des resultats pour les alignements
-		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
-
+		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).ne("ownerType", Parcel.ownerTypes.SYSTEM.toString()).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
+		String bigStr = "";
+		String oldWorld = "";
 		if (parcelIterator.hasNext()) {
-			plugin.sendComments(player, ChatFormater.format("List of owned parcels"));
 			while (parcelIterator.hasNext()) {
 				Parcel re = parcelIterator.next();
-				plugin.sendComments(player, ChatFormater.format("%5s:%15s:%8s:%8s:%8s", re.getWorld(), re.getRegionId(), re.getBuyStatus(), re.getOwner(), re.getOwnerType()));
+				if (!oldWorld.equalsIgnoreCase(re.getWorld())) {
+					bigStr = bigStr + "[" + re.getWorld() + "]";
+					oldWorld = re.getWorld();
+				}
+				String buyStateColorString = "{ChatColor.WHITE}";
+				switch (re.getBuyStatus()) {
+				case BUYABLE:
+					buyStateColorString = "{ChatColor.GREEN}";
+					break;
+				case UNBUYABLE:
+					buyStateColorString = "{ChatColor.GOLD}";
+					break;
+				}
+				bigStr = bigStr + ChatFormater.format(
+					"\n%s%-12s{ChatColor.WHITE}:{ChatColor.BLUE}%-8s{ChatColor.WHITE}:{ChatColor.AQUA}%-10s{ChatColor.WHITE}:%-14s", 
+					buyStateColorString, re.getBuyStatus().toString().trim(), re.getOwnerType().toString().trim(), re.getOwner().trim(), re.getRegionId());
 			}
-			plugin.sendComments(player, ChatFormater.format("-----------"));
+			bigStr = bigStr + "\n-----------";
 		} else {
-			plugin.sendComments(player, ChatFormater.format("No parcels", owner));
+			bigStr = bigStr + "\nNo parcels";
 		}
+		for (String line : bigStr.split("\\n")) {
+			if (!line.trim().isEmpty()) {
+				plugin.sendComments(player, bigStr);
+			}
+		}
+
 	}
 
 	/**
@@ -179,10 +199,13 @@ public class ParcelManager {
 
 	/**
 	 * Creates the parcel.
-	 *
-	 * @param player the player
-	 * @param parcelName the parcel name
-	 * @throws Exception the exception
+	 * 
+	 * @param player
+	 *            the player
+	 * @param parcelName
+	 *            the parcel name
+	 * @throws Exception
+	 *             the exception
 	 */
 	public void createParcel(Player player, String parcelName) throws Exception {
 		if (!ProtectedRegion.isValidId(parcelName)) {
@@ -216,7 +239,7 @@ public class ParcelManager {
 			BlockVector min = sel.getNativeMinimumPoint().setY(0).toBlockVector();
 			BlockVector max = sel.getNativeMaximumPoint().setY(w.getMaxHeight()).toBlockVector();
 			region = new ProtectedCuboidRegion(parcelName, min, max);
-			plugin.logger.log("region %s %s %d",min.toString(),max.toString(), w.getMaxHeight());
+			plugin.logger.log("region %s %s %d", min.toString(), max.toString(), w.getMaxHeight());
 		} else {
 			throw new QDCommandException("The type of region selected in WorldEdit is unsupported in WorldGuard!");
 		}
@@ -235,13 +258,13 @@ public class ParcelManager {
 		DefaultDomain own = new DefaultDomain();
 		own.addPlayer(player.getName());
 		region.setOwners(own);
-		setRegionFlag(player, region, "BUILD", "allow");
+		setRegionFlag(player, region, "CONSTRUCT", "allow");
 
 		mgr.addRegion(region);
 		Parcel parcel = Parcel.getParcel(w.getName(), parcelName);
-		if(parcel==null){
+		if (parcel == null) {
 			parcel = new Parcel(w.getName(), region);
-		}else{
+		} else {
 			parcel.setPriceAndSurface(w.getName(), region);
 		}
 		parcel.save();
@@ -311,9 +334,11 @@ public class ParcelManager {
 
 	/**
 	 * Teleport the player to parcel.
-	 *
-	 * @param player the player
-	 * @param parcelName the parcel name
+	 * 
+	 * @param player
+	 *            the player
+	 * @param parcelName
+	 *            the parcel name
 	 */
 	public void teleportToParcel(Player player, String parcelName) {
 		World w = player.getWorld();
@@ -329,12 +354,17 @@ public class ParcelManager {
 
 	/**
 	 * Allocate parcel.
-	 *
-	 * @param player the player
-	 * @param WorldId the world id
-	 * @param parcelName the parcel name
-	 * @param newOwner the new owner
-	 * @throws QDCommandException the qD command exception
+	 * 
+	 * @param player
+	 *            the player
+	 * @param WorldId
+	 *            the world id
+	 * @param parcelName
+	 *            the parcel name
+	 * @param newOwner
+	 *            the new owner
+	 * @throws QDCommandException
+	 *             the qD command exception
 	 */
 	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(WorldId, parcelName);
@@ -358,11 +388,15 @@ public class ParcelManager {
 
 	/**
 	 * Sets the buyable.
-	 *
-	 * @param player the player
-	 * @param parcelName the parcel name
-	 * @param priceString the price string
-	 * @throws Exception the exception
+	 * 
+	 * @param player
+	 *            the player
+	 * @param parcelName
+	 *            the parcel name
+	 * @param priceString
+	 *            the price string
+	 * @throws Exception
+	 *             the exception
 	 */
 	public void setBuyable(Player player, String parcelName, String priceString) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
@@ -380,13 +414,15 @@ public class ParcelManager {
 		plugin.sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
 	}
 
-
 	/**
 	 * Sets the unbuyable.
-	 *
-	 * @param player the player
-	 * @param parcelName the parcel name
-	 * @throws Exception the exception
+	 * 
+	 * @param player
+	 *            the player
+	 * @param parcelName
+	 *            the parcel name
+	 * @throws Exception
+	 *             the exception
 	 */
 	public void setUnbuyable(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
@@ -400,10 +436,13 @@ public class ParcelManager {
 
 	/**
 	 * Buy parcel.
-	 *
-	 * @param player the player
-	 * @param parcelName the parcel name
-	 * @throws Exception the exception
+	 * 
+	 * @param player
+	 *            the player
+	 * @param parcelName
+	 *            the parcel name
+	 * @throws Exception
+	 *             the exception
 	 */
 	public void buyParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
@@ -427,10 +466,13 @@ public class ParcelManager {
 
 	/**
 	 * Manage parcel member.
-	 *
-	 * @param player the player
-	 * @param args the args
-	 * @throws Exception the exception
+	 * 
+	 * @param player
+	 *            the player
+	 * @param args
+	 *            the args
+	 * @throws Exception
+	 *             the exception
 	 */
 	public void manageParcelMember(Player player, String[] args) throws Exception {
 		String parcelName = args[1];
@@ -442,7 +484,7 @@ public class ParcelManager {
 		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.vaultPermission.playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
-		
+
 		plugin.sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
 	}
 
