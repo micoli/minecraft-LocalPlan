@@ -2,7 +2,7 @@ name: LocalPlan
 main: org.micoli.minecraft.localPlan.LocalPlan
 version: 0.2
 description: parcel management
-depend: [Vault,dynmap, WorldGuard]
+depend: [Vault,dynmap, WorldGuard,morgUtils]
 commands:
     lp:
       description: main command 

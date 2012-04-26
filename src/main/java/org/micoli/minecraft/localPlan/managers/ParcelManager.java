@@ -22,6 +22,7 @@ import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
 import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
 import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
+import org.micoli.minecraft.utils.StringUtils;
 
 import com.avaje.ebean.Expression;
 import com.avaje.ebean.Query;
@@ -143,37 +144,66 @@ public class ParcelManager {
 
 		// todo revoir l'ordre des resultats pour les alignements
 		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).ne("ownerType", Parcel.ownerTypes.SYSTEM.toString()).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
-		String bigStr = "";
+		ArrayList<String> bigStr = new ArrayList<String>();
 		String oldWorld = "";
+		String oldBuyStateColorString = "";
 		if (parcelIterator.hasNext()) {
 			while (parcelIterator.hasNext()) {
-				Parcel re = parcelIterator.next();
-				if (!oldWorld.equalsIgnoreCase(re.getWorld())) {
-					bigStr = bigStr + "[" + re.getWorld() + "]";
-					oldWorld = re.getWorld();
-				}
-				String buyStateColorString = "{ChatColor.WHITE}";
-				switch (re.getBuyStatus()) {
-				case BUYABLE:
-					buyStateColorString = "{ChatColor.GREEN}";
+				Parcel parcel = parcelIterator.next();
+				String buyStateColorString = "";
+				String ownerTypeStr = "";
+				String ownerStr = "";
+				String priceStr="";
+				switch(parcel.getOwnerType()){
+					case STATE:
+						ownerTypeStr = "{ChatColor.BLUE}";
+						ownerStr = "State";
 					break;
-				case UNBUYABLE:
-					buyStateColorString = "{ChatColor.GOLD}";
+					case FACTION:
+						ownerTypeStr = "{ChatColor.AQUA}";
+						ownerStr = "Faction";
+					break;
+					case SYSTEM:
+						ownerTypeStr = "{ChatColor.GOLD}System";
+						ownerStr = "System";
+					break;
+					case PLAYER:
+						ownerTypeStr = "{ChatColor.LIGHT_PURPLE}";
+						ownerStr = parcel.getOwner();
 					break;
 				}
-				bigStr = bigStr + ChatFormater.format(
-					"\n%s%-12s{ChatColor.WHITE}:{ChatColor.BLUE}%-8s{ChatColor.WHITE}:{ChatColor.AQUA}%-10s{ChatColor.WHITE}:%-14s", 
-					buyStateColorString, re.getBuyStatus().toString().trim(), re.getOwnerType().toString().trim(), re.getOwner().trim(), re.getRegionId());
+				
+				switch (parcel.getBuyStatus()) {
+					case BUYABLE:
+						buyStateColorString = "{ChatColor.GREEN}";
+						priceStr = String.format("({ChatColor.GREEN}%.2f{ChatColor.WHITE})",parcel.getPrice());
+					break;
+					case UNBUYABLE:
+						buyStateColorString = "{ChatColor.RED}";
+					break;
+				}
+				
+				if (!oldWorld.equalsIgnoreCase(parcel.getWorld())) {
+					bigStr.add(ChatFormater.format("[{ChatColor.GOLD}" + parcel.getWorld() + "{ChatColor.WHITE}]"));
+					oldWorld = parcel.getWorld();
+				}
+				
+				if(!oldBuyStateColorString.equalsIgnoreCase(buyStateColorString)){
+					bigStr.add(ChatFormater.format("%s%s",buyStateColorString,StringUtils.fixedLength(parcel.getBuyStatus().toString(),12)));
+					oldBuyStateColorString=buyStateColorString;
+				}
+				bigStr.add(ChatFormater.format(
+					"- %s%s{ChatColor.WHITE}| {ChatColor.WHITE}%s %s", 
+					ownerTypeStr,
+					StringUtils.fixedLength(ownerStr,12),
+					StringUtils.fixedLength(parcel.getRegionId(),15),
+					priceStr));
 			}
-			bigStr = bigStr + "\n-----------";
+			bigStr.add("-----------");
 		} else {
-			bigStr = bigStr + "\nNo parcels";
+			bigStr.add("No parcels");
 		}
-		for (String line : bigStr.split("\\n")) {
-			if (!line.trim().isEmpty()) {
-				plugin.sendComments(player, bigStr);
-			}
-		}
+		plugin.sendComments(player, bigStr.toArray(new String[bigStr.size()]) ,false);
 
 	}
 

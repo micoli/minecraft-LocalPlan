@@ -120,7 +120,7 @@
 					</archive>
 				</configuration>
 			</plugin>
-			<plugin>
+			<!--<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>1.4</version>
@@ -134,22 +134,22 @@
 							<shadedArtifactAttached>false</shadedArtifactAttached>
 							<artifactSet>
 								<includes>
-									<include>org.micoli.minecraft:morg-utils:jar:*</include>
-									<include>com.lennardf1989:bukkitex:jar:*</include>
+									include>com.lennardf1989:bukkitex:jar:*</include>
+									include>org.micoli.minecraft:morg-utils:jar:*</include
 								</includes>
 							</artifactSet>
-							<filters>
+							filters>
 								<filter>
 									<artifact>org.micoli.minecraft:morg-utils:jar:*</artifact>
 									<includes>
-										<include>org/micoli/minecraft/**</include>
+									s	<include>org/micoli/minecraft/**</include>
 									</includes>
 								</filter>
-							</filters>
+							</filters
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin>-->
 			<!-- Assembly -->
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
