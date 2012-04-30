@@ -153,57 +153,52 @@ public class ParcelManager {
 				String buyStateColorString = "";
 				String ownerTypeStr = "";
 				String ownerStr = "";
-				String priceStr="";
-				switch(parcel.getOwnerType()){
-					case STATE:
-						ownerTypeStr = "{ChatColor.BLUE}";
-						ownerStr = "State";
+				String priceStr = "";
+				switch (parcel.getOwnerType()) {
+				case STATE:
+					ownerTypeStr = "{ChatColor.BLUE}";
+					ownerStr = "State";
 					break;
-					case FACTION:
-						ownerTypeStr = "{ChatColor.AQUA}";
-						ownerStr = "Faction";
+				case FACTION:
+					ownerTypeStr = "{ChatColor.AQUA}";
+					ownerStr = "Faction";
 					break;
-					case SYSTEM:
-						ownerTypeStr = "{ChatColor.GOLD}System";
-						ownerStr = "System";
+				case SYSTEM:
+					ownerTypeStr = "{ChatColor.GOLD}System";
+					ownerStr = "System";
 					break;
-					case PLAYER:
-						ownerTypeStr = "{ChatColor.LIGHT_PURPLE}";
-						ownerStr = parcel.getOwner();
+				case PLAYER:
+					ownerTypeStr = "{ChatColor.LIGHT_PURPLE}";
+					ownerStr = parcel.getOwner();
 					break;
 				}
-				
+
 				switch (parcel.getBuyStatus()) {
-					case BUYABLE:
-						buyStateColorString = "{ChatColor.GREEN}";
-						priceStr = String.format("({ChatColor.GREEN}%.2f{ChatColor.WHITE})",parcel.getPrice());
+				case BUYABLE:
+					buyStateColorString = "{ChatColor.GREEN}";
+					priceStr = String.format("({ChatColor.GREEN}%.2f{ChatColor.WHITE})", parcel.getPrice());
 					break;
-					case UNBUYABLE:
-						buyStateColorString = "{ChatColor.RED}";
+				case UNBUYABLE:
+					buyStateColorString = "{ChatColor.RED}";
 					break;
 				}
-				
+
 				if (!oldWorld.equalsIgnoreCase(parcel.getWorld())) {
 					bigStr.add(ChatFormater.format("[{ChatColor.GOLD}" + parcel.getWorld() + "{ChatColor.WHITE}]"));
 					oldWorld = parcel.getWorld();
 				}
-				
-				if(!oldBuyStateColorString.equalsIgnoreCase(buyStateColorString)){
-					bigStr.add(ChatFormater.format("%s%s",buyStateColorString,StringUtils.fixedLength(parcel.getBuyStatus().toString(),12)));
-					oldBuyStateColorString=buyStateColorString;
+
+				if (!oldBuyStateColorString.equalsIgnoreCase(buyStateColorString)) {
+					bigStr.add(ChatFormater.format("%s%s", buyStateColorString, StringUtils.fixedLength(parcel.getBuyStatus().toString(), 12)));
+					oldBuyStateColorString = buyStateColorString;
 				}
-				bigStr.add(ChatFormater.format(
-					"- %s%s{ChatColor.WHITE}| {ChatColor.WHITE}%s %s", 
-					ownerTypeStr,
-					StringUtils.fixedLength(ownerStr,12),
-					StringUtils.fixedLength(parcel.getRegionId(),15),
-					priceStr));
+				bigStr.add(ChatFormater.format("- %s%s{ChatColor.WHITE}| {ChatColor.WHITE}%s %s", ownerTypeStr, StringUtils.fixedLength(ownerStr, 12), StringUtils.fixedLength(parcel.getRegionId(), 15), priceStr));
 			}
 			bigStr.add("-----------");
 		} else {
 			bigStr.add("No parcels");
 		}
-		plugin.sendComments(player, bigStr.toArray(new String[bigStr.size()]) ,false);
+		plugin.sendComments(player, bigStr.toArray(new String[bigStr.size()]), false);
 
 	}
 

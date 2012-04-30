@@ -18,9 +18,11 @@ import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
 import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
 import org.micoli.minecraft.localPlan.managers.InterestPointManager;
 import org.micoli.minecraft.localPlan.managers.LocalPlanCommandManager;
+import org.micoli.minecraft.localPlan.managers.ParcelExporter;
 import org.micoli.minecraft.localPlan.managers.ParcelManager;
 import org.micoli.minecraft.localPlan.managers.PreviewBlockManager;
 import org.micoli.minecraft.utils.PluginEnvironment;
+import org.micoli.minecraft.utils.Task;
 
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
@@ -57,6 +59,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	private InterestPointManager interestPointManager;
 	private ParcelManager parcelManager;
 	private PreviewBlockManager previewBlockManager;
+	private ParcelExporter parcelExporter;
 
 	/**
 	 * Gets the single instance of LocalPlan.
@@ -99,9 +102,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		interestPointManager = new InterestPointManager(instance);
 		parcelManager = new ParcelManager(instance);
 		previewBlockManager = new PreviewBlockManager(instance);
-
+		parcelExporter = new ParcelExporter(instance);
+		
 		if (interestPointManager.initialize()) {
 			getParcelManager().initalizeRegions();
+			Task runningTask = new Task(this, this) {
+				public void run() {
+					parcelExporter.getMaps();
+				}
+			};
+			runningTask.startDelayed(25L);
+			
 		}
 
 		executor = new LocalPlanCommandManager(this, new Class[] { getClass() });
