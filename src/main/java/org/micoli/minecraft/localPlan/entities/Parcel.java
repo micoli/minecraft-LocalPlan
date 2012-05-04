@@ -16,6 +16,7 @@ import com.avaje.ebean.validation.NotNull;
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class Parcel.
  * 
@@ -159,7 +160,7 @@ public class Parcel {
 		double dist = 0;
 		plugin.logger.log("volume %d", region.volume());
 		int surf = LocalPlanUtils.getRegionSurface(region);
-		double price = plugin.markerDefaultPrice * surf;
+		double price = plugin.getMarkerDefaultPrice() * surf;
 
 		setPointOfInterest("");
 		setDistToPointOfInterest(0);
@@ -175,15 +176,15 @@ public class Parcel {
 		} else {
 			while (interestPointIterator.hasNext()) {
 				InterestPoint interestPoint = plugin.getInterestPointManager().getInterestPoints().get(worldName).get(interestPointIterator.next());
-				dist = LocalPlanUtils.blockVector2DDistance(barycentre, interestPoint.blockVector2D);
+				dist = LocalPlanUtils.blockVector2DDistance(barycentre, interestPoint.getBlockVector2D());
 				if (dist < maxDistance) {
 					maxDistance = dist;
 					setPointOfInterest(interestPoint.getLabel());
 					setDistToPointOfInterest(dist);
-					if (dist > plugin.markerMaximumDistance) {
-						price = surf * interestPoint.price;
+					if (dist > plugin.getMarkerMaximumDistance()) {
+						price = surf * interestPoint.getPrice();
 					} else {
-						price = surf * (interestPoint.price - (interestPoint.price - plugin.markerDefaultPrice) / plugin.markerMaximumDistance * dist);
+						price = surf * (interestPoint.getPrice() - (interestPoint.getPrice() - plugin.getMarkerDefaultPrice()) / plugin.getMarkerMaximumDistance() * dist);
 					}
 				}
 			}

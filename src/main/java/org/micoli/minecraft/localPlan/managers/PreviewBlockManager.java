@@ -19,13 +19,23 @@ import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class PreviewBlockManager.
+ */
 public class PreviewBlockManager {
 	
-	LocalPlan plugin;
+	/** The plugin. */
+	private LocalPlan plugin;
 
 	/** The preview blocks. */
 	private HashMap<String, List<Block>> previewBlocks = new HashMap<String, List<Block>>();
 
+	/**
+	 * Instantiates a new preview block manager.
+	 *
+	 * @param instance the instance
+	 */
 	public PreviewBlockManager(LocalPlan instance) {
 		this.plugin = instance;
 	}
@@ -36,7 +46,14 @@ public class PreviewBlockManager {
 	 * @param parcelName the parcel name
 	 * @throws Exception the exception
 	 */
-	public void showParcel(Player player, String parcelName) throws Exception {
+	/**
+ 	 * Show parcel.
+ 	 *
+ 	 * @param player the player
+ 	 * @param parcelName the parcel name
+ 	 * @throws Exception the exception
+ 	 */
+ 	public void showParcel(Player player, String parcelName) throws Exception {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found " + player.getWorld().toString() + "::" + parcelName);

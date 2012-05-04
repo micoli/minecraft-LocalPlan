@@ -73,6 +73,11 @@
 			<artifactId>DynmapCore</artifactId>
 			<version>[0.36,)</version>
 		</dependency>
+		<dependency>
+			<groupId>com.vividsolutions</groupId>
+			<artifactId>jts</artifactId>
+			<version>1.12</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<sourceDirectory>${basedir}/src/main/java</sourceDirectory>
@@ -129,7 +134,7 @@
 					</archive>
 				</configuration>
 			</plugin>
-			<!--<plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>1.4</version>
@@ -143,22 +148,13 @@
 							<shadedArtifactAttached>false</shadedArtifactAttached>
 							<artifactSet>
 								<includes>
-									include>com.lennardf1989:bukkitex:jar:*</include>
-									include>org.micoli.minecraft:morg-utils:jar:*</include
+									<include>com.vividsolutions:jts:jar:*</include>
 								</includes>
 							</artifactSet>
-							filters>
-								<filter>
-									<artifact>org.micoli.minecraft:morg-utils:jar:*</artifact>
-									<includes>
-									s	<include>org/micoli/minecraft/**</include>
-									</includes>
-								</filter>
-							</filters
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>-->
+			</plugin>
 			<!-- Assembly -->
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>

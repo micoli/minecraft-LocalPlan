@@ -3,7 +3,6 @@ package org.micoli.minecraft.localPlan.managers;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommandManager;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class LocalPlanCommandManager.
  */

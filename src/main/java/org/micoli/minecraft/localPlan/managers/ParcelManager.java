@@ -43,12 +43,36 @@ import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class ParcelManager.
+ */
 public class ParcelManager {
 
+	/** The plugin. */
 	LocalPlan plugin;
 	/** The internal array of parcels. */
-	public Map<String, Parcel> aParcel;
+	private Map<String, Parcel> aParcel;
 
+	/**
+	 * @return the aParcel
+	 */
+	public Map<String, Parcel> getaParcel() {
+		return aParcel;
+	}
+
+	/**
+	 * @param aParcel the aParcel to set
+	 */
+	public void setaParcel(Map<String, Parcel> aParcel) {
+		this.aParcel = aParcel;
+	}
+
+	/**
+	 * Instantiates a new parcel manager.
+	 *
+	 * @param instance the instance
+	 */
 	public ParcelManager(LocalPlan instance) {
 		this.plugin = instance;
 		aParcel = new HashMap<String, Parcel>();

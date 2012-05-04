@@ -12,16 +12,16 @@ import com.sk89q.worldedit.BlockVector2D;
 public class InterestPoint {
 	
 	/** The block vector2 d. */
-	public BlockVector2D blockVector2D;
+	private BlockVector2D blockVector2D;
 	
 	/** The world. */
-	public String world;
+	private String world;
 	
 	/** The label. */
-	public String label;
+	private String label;
 	
 	/** The price. */
-	public double price;
+	private double price;
 
 	/**
 	 * Instantiates a new interest point.
@@ -37,7 +37,7 @@ public class InterestPoint {
 		
 		this.world = world;
 		this.label = label;
-		this.blockVector2D = blockVector2D;
+		this.setBlockVector2D(blockVector2D);
 		if (scanner.hasNextDouble()) {
 			this.price = scanner.nextDouble();
 		}
@@ -95,5 +95,19 @@ public class InterestPoint {
 	 */
 	public void setPrice(double price) {
 		this.price = price;
+	}
+
+	/**
+	 * @return the blockVector2D
+	 */
+	public BlockVector2D getBlockVector2D() {
+		return blockVector2D;
+	}
+
+	/**
+	 * @param blockVector2D the blockVector2D to set
+	 */
+	public void setBlockVector2D(BlockVector2D blockVector2D) {
+		this.blockVector2D = blockVector2D;
 	}
 }

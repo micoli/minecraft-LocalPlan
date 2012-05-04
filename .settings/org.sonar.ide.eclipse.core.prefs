@@ -1,0 +1,7 @@
+analyseLocally=true
+eclipse.preferences.version=1
+projectArtifactId=morg-LocalPlan
+projectBranch=
+projectGroupId=org.micoli.minecraft
+serverUrl=http\://mediaserver/sonar
+version=1

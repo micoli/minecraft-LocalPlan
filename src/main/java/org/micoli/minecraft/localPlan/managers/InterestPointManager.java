@@ -17,30 +17,49 @@ import org.micoli.minecraft.utils.ChatFormater;
 
 import com.sk89q.worldedit.BlockVector2D;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class InterestPointManager.
+ */
 public class InterestPointManager {
 	
+	/** The plugin. */
 	LocalPlan plugin;
 
 	/** The interest points. */
 	private HashMap<String, HashMap<String,InterestPoint>> interestPoints;
 
 	/**
+	 * Gets the interest points.
+	 *
 	 * @return the interestPoints
 	 */
 	public HashMap<String, HashMap<String, InterestPoint>> getInterestPoints() {
 		return interestPoints;
 	}
+	
 	/**
+	 * Sets the interest points.
+	 *
 	 * @param interestPoints the interestPoints to set
 	 */
 	public void setInterestPoints(HashMap<String, HashMap<String, InterestPoint>> interestPoints) {
 		this.interestPoints = interestPoints;
 	}
+	
+	/**
+	 * Instantiates a new interest point manager.
+	 *
+	 * @param instance the instance
+	 */
 	public InterestPointManager(LocalPlan instance) {
 		this.plugin = instance;
 	}
+	
 	/**
 	 * Initialize interests point.
+	 *
+	 * @return true, if successful
 	 */
 	public boolean initialize(){
 		Pattern pattern = Pattern.compile("-(\\d+(\\.\\d+)?)$");
@@ -69,6 +88,15 @@ public class InterestPointManager {
 		return true;
 	}
 	
+	/**
+	 * Adds the poi.
+	 *
+	 * @param player the player
+	 * @param poiName the poi name
+	 * @param icon the icon
+	 * @param priceString the price string
+	 * @throws Exception the exception
+	 */
 	public void addPOI(Player player, String poiName, String icon, String priceString) throws Exception {
 		if (getInterestPoints().get(player.getWorld().getName())==null){
 			getInterestPoints().put(player.getWorld().getName(),new HashMap<String,InterestPoint>());

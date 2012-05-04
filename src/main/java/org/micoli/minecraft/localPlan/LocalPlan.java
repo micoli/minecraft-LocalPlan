@@ -33,7 +33,7 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/** The my executor. */
-	protected LocalPlanCommandManager executor;
+	private LocalPlanCommandManager executor;
 
 	/** The instance. */
 	private static LocalPlan instance;
@@ -48,17 +48,24 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	private DynmapCommonAPI dynmapPlugin;
 
 	/** The marker default price. */
-	public double markerDefaultPrice = 300;
+	private double markerDefaultPrice = 300;
 
 	/** The marker maximum distance. */
-	public double markerMaximumDistance = 1000;
+	private double markerMaximumDistance = 1000;
 
 	/** The markerset name for POI. */
-	public String markersetName = "LocalPlanPOI";
+	private String markersetName = "LocalPlanPOI";
 
+	/** The interest point manager. */
 	private InterestPointManager interestPointManager;
+	
+	/** The parcel manager. */
 	private ParcelManager parcelManager;
+	
+	/** The preview block manager. */
 	private PreviewBlockManager previewBlockManager;
+	
+	/** The parcel exporter. */
 	private ParcelExporter parcelExporter;
 
 	/**
@@ -71,7 +78,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * 
+	 * On enable.
+	 *
 	 * @see org.micoli.minecraft.bukkit.QDBukkitPlugin#onEnable()
 	 */
 	@Override
@@ -122,6 +130,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * 
 	 * @see org.micoli.minecraft.bukkit.QDBukkitPlugin#getDatabaseORMClasses()
 	 */
+	/* (non-Javadoc)
+	 * @see org.micoli.minecraft.bukkit.QDBukkitPlugin#getDatabaseORMClasses()
+	 */
 	protected java.util.List<Class<?>> getDatabaseORMClasses() {
 		List<Class<?>> list = new ArrayList<Class<?>>();
 		list.add(Parcel.class);
@@ -129,6 +140,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	};
 
 	/**
+	 * Gets the marker default price.
+	 *
 	 * @return the markerDefaultPrice
 	 */
 	public double getMarkerDefaultPrice() {
@@ -136,14 +149,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param markerDefaultPrice
-	 *            the markerDefaultPrice to set
+	 * Sets the marker default price.
+	 *
+	 * @param markerDefaultPrice the markerDefaultPrice to set
 	 */
 	public void setMarkerDefaultPrice(double markerDefaultPrice) {
 		this.markerDefaultPrice = markerDefaultPrice;
 	}
 
 	/**
+	 * Gets the marker maximum distance.
+	 *
 	 * @return the markerMaximumDistance
 	 */
 	public double getMarkerMaximumDistance() {
@@ -151,14 +167,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param markerMaximumDistance
-	 *            the markerMaximumDistance to set
+	 * Sets the marker maximum distance.
+	 *
+	 * @param markerMaximumDistance the markerMaximumDistance to set
 	 */
 	public void setMarkerMaximumDistance(double markerMaximumDistance) {
 		this.markerMaximumDistance = markerMaximumDistance;
 	}
 
 	/**
+	 * Gets the markerset name.
+	 *
 	 * @return the markersetName
 	 */
 	public String getMarkersetName() {
@@ -166,8 +185,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param markersetName
-	 *            the markersetName to set
+	 * Sets the markerset name.
+	 *
+	 * @param markersetName the markersetName to set
 	 */
 	public void setMarkersetName(String markersetName) {
 		this.markersetName = markersetName;
@@ -187,6 +207,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
+	 * Gets the dynmap plugin.
+	 *
 	 * @return the dynmapPlugin
 	 */
 	public DynmapCommonAPI getDynmapPlugin() {
@@ -194,14 +216,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param dynmapPlugin
-	 *            the dynmapPlugin to set
+	 * Sets the dynmap plugin.
+	 *
+	 * @param dynmapPlugin the dynmapPlugin to set
 	 */
 	public void setDynmapPlugin(DynmapCommonAPI dynmapPlugin) {
 		this.dynmapPlugin = dynmapPlugin;
 	}
 
 	/**
+	 * Gets the world guard plugin.
+	 *
 	 * @return the worldGuardPlugin
 	 */
 	public WorldGuardPlugin getWorldGuardPlugin() {
@@ -209,14 +234,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param worldGuardPlugin
-	 *            the worldGuardPlugin to set
+	 * Sets the world guard plugin.
+	 *
+	 * @param worldGuardPlugin the worldGuardPlugin to set
 	 */
 	public void setWorldGuardPlugin(WorldGuardPlugin worldGuardPlugin) {
 		this.worldGuardPlugin = worldGuardPlugin;
 	}
 
 	/**
+	 * Gets the world edit plugin.
+	 *
 	 * @return the worldEditPlugin
 	 */
 	public WorldEditPlugin getWorldEditPlugin() {
@@ -224,14 +252,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param worldEditPlugin
-	 *            the worldEditPlugin to set
+	 * Sets the world edit plugin.
+	 *
+	 * @param worldEditPlugin the worldEditPlugin to set
 	 */
 	public void setWorldEditPlugin(WorldEditPlugin worldEditPlugin) {
 		this.worldEditPlugin = worldEditPlugin;
 	}
 
 	/**
+	 * Gets the interest point manager.
+	 *
 	 * @return the interestPointManager
 	 */
 	public InterestPointManager getInterestPointManager() {
@@ -239,14 +270,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param interestPointManager
-	 *            the interestPointManager to set
+	 * Sets the interest point manager.
+	 *
+	 * @param interestPointManager the interestPointManager to set
 	 */
 	public void setInterestPointManager(InterestPointManager interestPointManager) {
 		this.interestPointManager = interestPointManager;
 	}
 
 	/**
+	 * Gets the parcel manager.
+	 *
 	 * @return the parcelManager
 	 */
 	public ParcelManager getParcelManager() {
@@ -254,14 +288,17 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param parcelManager
-	 *            the parcelManager to set
+	 * Sets the parcel manager.
+	 *
+	 * @param parcelManager the parcelManager to set
 	 */
 	public void setParcelManager(ParcelManager parcelManager) {
 		this.parcelManager = parcelManager;
 	}
 
 	/**
+	 * Gets the preview block manager.
+	 *
 	 * @return the previewBlockManager
 	 */
 	public PreviewBlockManager getPreviewBlockManager() {
@@ -269,8 +306,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * @param previewBlockManager
-	 *            the previewBlockManager to set
+	 * Sets the preview block manager.
+	 *
+	 * @param previewBlockManager the previewBlockManager to set
 	 */
 	public void setPreviewBlockManager(PreviewBlockManager previewBlockManager) {
 		this.previewBlockManager = previewBlockManager;
@@ -581,16 +619,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/**
 	 * Cmd_POI.
-	 * 
-	 * @param sender
-	 *            the sender
-	 * @param command
-	 *            the command
-	 * @param label
-	 *            the label
-	 * @param args
-	 *            the args
-	 * @throws Exception
+	 *
+	 * @param sender the sender
+	 * @param command the command
+	 * @param label the label
+	 * @param args the args
+	 * @throws Exception the exception
 	 */
 	@QDCommand(aliases = "poi", permissions = { "localplan.poi" }, usage = "<POIname> <icon> <price>", description = "manage Point of Interest")
 	public void cmd_POI(CommandSender sender, Command command, String label, String[] args) throws Exception {
