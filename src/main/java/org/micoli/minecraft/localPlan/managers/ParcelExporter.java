@@ -103,7 +103,11 @@ public class ParcelExporter {
 	 */
 	public void getMaps() {
 		final int planeAngle = 180;
+<<<<<<< HEAD
 		DynmapPlugin dm = ((DynmapPlugin) plugin.pm.getPlugin("dynmap"));
+=======
+		DynmapPlugin dm = ((DynmapPlugin) plugin.getPm().getPlugin("dynmap"));
+>>>>>>> sonar public changes
 
 		DynmapCore dynmapCore = getDynmapCore(dm);
 		if (dynmapCore == null) {
