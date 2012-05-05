@@ -27,6 +27,7 @@ import org.micoli.minecraft.utils.Task;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class LocalPlan.
  */
@@ -56,6 +57,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The markerset name for POI. */
 	private String markersetName = "LocalPlanPOI";
 
+	/** The parcel exporter path. */
 	private String parcelExporterPath = "parcelImages";
 
 	/** The interest point manager. */
@@ -320,6 +322,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
+	 * Gets the parcel exporter path.
+	 *
 	 * @return the parcelExporterPath
 	 */
 	public String getParcelExporterPath() {
@@ -327,6 +331,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
+	 * Sets the parcel exporter path.
+	 *
 	 * @param parcelExporterPath the parcelExporterPath to set
 	 */
 	public void setParcelExporterPath(String parcelExporterPath) {

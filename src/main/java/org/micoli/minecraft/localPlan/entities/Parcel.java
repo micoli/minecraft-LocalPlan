@@ -77,48 +77,48 @@ public class Parcel {
 	/** The id. */
 	@Id
 	@Length(max = 200)
-	private String id;
+	protected String id;
 
 	/** The regionId. */
 	@NotNull
 	@Length(max = 100)
-	private String regionId;
+	protected String regionId;
 
 	/** The world. */
 	@NotNull
 	@Length(max = 100)
-	private String world;
+	protected String world;
 
 	/** The player owner. */
 	@NotNull
 	@Length(max = 100)
-	private String owner = "";
+	protected String owner = "";
 
 	/** The point of interest. */
 	@NotNull
 	@Length(max = 100)
-	private String pointOfInterest;
+	protected String pointOfInterest;
 
 	/** The dist to point of interest. */
 	@NotNull
 	@Length(max = 100)
-	private double distToPointOfInterest;
+	protected double distToPointOfInterest;
 
 	/** The price. */
 	@NotNull
 	@Length(min = 1)
-	private double price = 1;
+	protected double price = 1;
 
 	/** The surface. */
 	@NotNull
 	@Length(min = 1)
-	private int surface = 1;
+	protected int surface = 1;
 
 	/** The buy status. */
-	private buyStatusTypes buyStatus = buyStatusTypes.BUYABLE;
+	protected buyStatusTypes buyStatus = buyStatusTypes.BUYABLE;
 
 	/** The owner type. */
-	private ownerTypes ownerType = ownerTypes.STATE;
+	protected ownerTypes ownerType = ownerTypes.STATE;
 
 	/**
 	 * Instantiates a new parcel.
