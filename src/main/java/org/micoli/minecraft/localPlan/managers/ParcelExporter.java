@@ -53,13 +53,13 @@ public class ParcelExporter {
 	private LocalPlan plugin;
 	
 	/** The sea level. */
-	private final int seaLevel = 65;
+	private static final int seaLevel = 65;
 	
 	/** The buffer size. */
-	private final int bufferSize = 4;
+	private static final int bufferSize = 4;
 	
 	/** The border size. */
-	final private int borderSize = 50;
+	final static private int borderSize = 50;
 	
 	
 	/**

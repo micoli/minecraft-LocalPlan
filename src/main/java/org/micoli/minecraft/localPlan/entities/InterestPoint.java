@@ -107,7 +107,7 @@ public class InterestPoint {
 	/**
 	 * @param blockVector2D the blockVector2D to set
 	 */
-	public void setBlockVector2D(BlockVector2D blockVector2D) {
+	final public void setBlockVector2D(BlockVector2D blockVector2D) {
 		this.blockVector2D = blockVector2D;
 	}
 }
