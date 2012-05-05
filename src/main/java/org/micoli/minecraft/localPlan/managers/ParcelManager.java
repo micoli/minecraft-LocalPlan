@@ -301,7 +301,7 @@ public class ParcelManager {
 				throw new QDCommandException("That region is overlapping an existing one.");
 			}
 		} catch (UnsupportedIntersectionException e) {
-			e.printStackTrace();
+			plugin.logger.dumpStackTrace(e);
 		}
 		// Get the list of region owners
 		DefaultDomain own = new DefaultDomain();
@@ -375,7 +375,7 @@ public class ParcelManager {
 			try {
 				setFlag(region, foundFlag, player, flagValue);
 			} catch (InvalidFlagFormat e) {
-				e.printStackTrace();
+				plugin.logger.dumpStackTrace(e);
 			}
 		}
 

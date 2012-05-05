@@ -85,13 +85,13 @@ public class ParcelExporter {
 			f.setAccessible(true);
 			return (DynmapCore) f.get(dm);
 		} catch (SecurityException e) {
-			e.printStackTrace();
+			plugin.logger.dumpStackTrace(e);
 		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
+			plugin.logger.dumpStackTrace(e);
 		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
+			plugin.logger.dumpStackTrace(e);
 		} catch (IllegalAccessException e) {
-			e.printStackTrace();
+			plugin.logger.dumpStackTrace(e);
 		}
 		return null;
 	}
@@ -174,7 +174,7 @@ public class ParcelExporter {
 						try {
 							Images.copySrcIntoDstAt(ImageIO.read(inFile), exportParcel, (maptile.tileOrdinalX() - minTileX) * w, (sizey - (maptile.tileOrdinalY() - minTileY) - 1) * h);
 						} catch (IOException e) {
-							e.printStackTrace();
+							plugin.logger.dumpStackTrace(e);
 						}
 					}
 
