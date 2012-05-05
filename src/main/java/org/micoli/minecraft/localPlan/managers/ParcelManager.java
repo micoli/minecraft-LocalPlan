@@ -91,7 +91,7 @@ public class ParcelManager {
 			Map<?, Parcel> listParcels = plugin.getStaticDatabase().find(Parcel.class).where().like("world", worldName).findMap();
 			plugin.logger.log("Map %s (%d)", worldName, listParcels.size());
 
-			RegionManager rm = plugin.getWorldGuardPlugin().getRegionManager(w);
+			RegionManager rm = getRegionManager(worldName);
 			if (rm == null){
 				continue;
 			}
@@ -429,7 +429,7 @@ public class ParcelManager {
 			throw new QDCommandException("Parcel not found");
 		}
 
-		RegionManager mgr = plugin.getWorldGuardPlugin().getGlobalRegionManager().get(plugin.getServer().getWorld(parcel.getWorld()));
+		RegionManager mgr = getRegionManager(parcel.getWorld());
 		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
 
 		DefaultDomain own = new DefaultDomain();
@@ -446,6 +446,9 @@ public class ParcelManager {
 		plugin.sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
 	}
 
+	private RegionManager getRegionManager(String world){
+		return plugin.getWorldGuardPlugin().getGlobalRegionManager().get(plugin.getServer().getWorld(world));
+	}
 	/**
 	 * Sets the buyable.
 	 * 
@@ -549,8 +552,32 @@ public class ParcelManager {
 		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.getVaultPermission().playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
-
-		plugin.sendComments(player, "You have right on that Parcel, but nothing is coded ^^");
+		RegionManager regionManager = getRegionManager(parcel.getWorld());
+		ProtectedRegion parcelRegion = regionManager.getRegion(parcel.getId());
+		
+		if(parcelRegion == null){
+			throw new QDCommandException("Parcel exists but there is no region associated with it :((");
+		}
+		if (args.length!=4){
+			throw new QDCommandException("Not enough or too many arguments");
+		}
+		if(args[2].equalsIgnoreCase("add")){
+			if(parcelRegion.isMember(args[3])){
+				throw new QDCommandException("Player already member of that parcel :"+parcelRegion.getMembers().toPlayersString() );
+			}else{
+				parcelRegion.getMembers().addPlayer(args[3]);
+				plugin.sendComments(player, "Addition done");
+			}
+		}else if(args[2].equalsIgnoreCase("remove")){
+			if(!parcelRegion.isMember(args[3])){
+				throw new QDCommandException("Player is not a member of that parcel :"+parcelRegion.getMembers().toPlayersString() );
+			}else{
+				parcelRegion.getMembers().removePlayer(args[3]);
+				plugin.sendComments(player, "Removal done");
+			}
+		}else{
+			throw new QDCommandException("SubCommand is not valid");
+		}
+			
 	}
-
 }
