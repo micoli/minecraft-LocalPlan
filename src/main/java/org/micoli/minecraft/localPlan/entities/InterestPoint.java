@@ -2,8 +2,6 @@ package org.micoli.minecraft.localPlan.entities;
 
 import java.util.Scanner;
 
-import org.dynmap.markers.MarkerSet;
-
 import com.sk89q.worldedit.BlockVector2D;
 
 /**
@@ -32,7 +30,7 @@ public class InterestPoint {
 	 * @param priceStr the price str
 	 * @param blockVector2D the block vector2 d
 	 */
-	public InterestPoint(String world, MarkerSet markerSet, String label, String priceStr, BlockVector2D blockVector2D) {
+	public InterestPoint(String world, String label, String priceStr, BlockVector2D blockVector2D) {
 		Scanner scanner = new Scanner(priceStr);
 		
 		this.world = world;
@@ -107,7 +105,7 @@ public class InterestPoint {
 	/**
 	 * @param blockVector2D the blockVector2D to set
 	 */
-	final public void setBlockVector2D(BlockVector2D blockVector2D) {
+	public final void setBlockVector2D(BlockVector2D blockVector2D) {
 		this.blockVector2D = blockVector2D;
 	}
 }

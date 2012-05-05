@@ -136,11 +136,11 @@ public class Parcel {
 	 */
 	public Parcel(String worldName, ProtectedRegion region) {
 		plugin = LocalPlan.getInstance();
-		String regionId = region.getId();
+		String regionIdPrm = region.getId();
 
-		this.setId(worldName + "::" + regionId);
+		this.setId(worldName + "::" + regionIdPrm);
 		this.setWorld(worldName);
-		this.setRegionId(regionId);
+		this.setRegionId(regionIdPrm);
 		this.setOwner("");
 		this.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
 		this.setPriceAndSurface(world, region);
@@ -159,7 +159,7 @@ public class Parcel {
 		double dist = 0;
 		plugin.logger.log("volume %d", region.volume());
 		int surf = LocalPlanUtils.getRegionSurface(region);
-		double price = plugin.getMarkerDefaultPrice() * surf;
+		double calcPrice = plugin.getMarkerDefaultPrice() * surf;
 
 		setPointOfInterest("");
 		setDistToPointOfInterest(0);
@@ -171,7 +171,7 @@ public class Parcel {
 		} catch (Exception e) {
 		}
 		if (interestPointIterator == null) {
-			price=0;
+			calcPrice=0;
 		} else {
 			while (interestPointIterator.hasNext()) {
 				InterestPoint interestPoint = plugin.getInterestPointManager().getInterestPoints().get(worldName).get(interestPointIterator.next());
@@ -181,15 +181,15 @@ public class Parcel {
 					setPointOfInterest(interestPoint.getLabel());
 					setDistToPointOfInterest(dist);
 					if (dist > plugin.getMarkerMaximumDistance()) {
-						price = surf * interestPoint.getPrice();
+						calcPrice = surf * interestPoint.getPrice();
 					} else {
-						price = surf * (interestPoint.getPrice() - (interestPoint.getPrice() - plugin.getMarkerDefaultPrice()) / plugin.getMarkerMaximumDistance() * dist);
+						calcPrice = surf * (interestPoint.getPrice() - (interestPoint.getPrice() - plugin.getMarkerDefaultPrice()) / plugin.getMarkerMaximumDistance() * dist);
 					}
 				}
 			}
 		}
-		plugin.logger.log("===>%s %d,%f", region.getId(), surf, price);
-		this.setPrice(Math.round(price));
+		plugin.logger.log("===>%s %d,%f", region.getId(), surf, calcPrice);
+		this.setPrice(Math.round(calcPrice));
 		this.setSurface(surf);
 	}
 

@@ -158,7 +158,6 @@ public class ParcelManager {
 		String ownerTypeArg = ownerType.toString();
 
 		if (owner.equalsIgnoreCase("__all__")) {
-			owner = "ALL";
 			ownerArg = "%";
 		}
 
@@ -314,6 +313,7 @@ public class ParcelManager {
 		DefaultDomain own = new DefaultDomain();
 		own.addPlayer(player.getName());
 		region.setOwners(own);
+		
 		setRegionFlag(player, region, "CONSTRUCT", "allow");
 
 		mgr.addRegion(region);

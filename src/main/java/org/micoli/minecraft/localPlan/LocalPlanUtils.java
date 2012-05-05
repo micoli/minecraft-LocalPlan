@@ -49,7 +49,6 @@ public class LocalPlanUtils {
 			x=x/points.size();
 			z=z/points.size();
 		}
-		BlockVector2D bary = new BlockVector2D(x,z);
-		return bary;
+		return new BlockVector2D(x,z);
 	}
 }

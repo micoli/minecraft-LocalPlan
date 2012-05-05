@@ -53,13 +53,13 @@ public class ParcelExporter {
 	private LocalPlan plugin;
 	
 	/** The sea level. */
-	private static final int seaLevel = 65;
+	private static final int SeaLevel = 65;
 	
 	/** The buffer size. */
-	private static final int bufferSize = 4;
+	private static final int BufferSize = 4;
 	
 	/** The border size. */
-	final static private int borderSize = 50;
+	private static final int BorderSize = 50;
 	
 	
 	/**
@@ -141,7 +141,7 @@ public class ParcelExporter {
 			for (ProtectedRegion region : regions.values()) {
 				if (!region.getId().equalsIgnoreCase("__global__")) {
 					int i;
-					MapTile[] mapTiles = isoHDPerspective.getTiles(dynmapWorld, region.getMinimumPoint().getBlockX(), seaLevel, region.getMinimumPoint().getBlockZ(), region.getMaximumPoint().getBlockX(), seaLevel, region.getMaximumPoint().getBlockZ());
+					MapTile[] mapTiles = isoHDPerspective.getTiles(dynmapWorld, region.getMinimumPoint().getBlockX(), SeaLevel, region.getMinimumPoint().getBlockZ(), region.getMaximumPoint().getBlockX(), SeaLevel, region.getMaximumPoint().getBlockZ());
 					Set<MapTile> regionTiles = new HashSet<MapTile>(Arrays.asList(mapTiles));
 					for (i = 0; i < mapTiles.length; i++) {
 						regionTiles.addAll(Arrays.asList(mapTiles[i].getAdjecentTiles()));
@@ -198,7 +198,7 @@ public class ParcelExporter {
 							//putCross(ExportParcel, point);
 						}
 						
-						polygon = expandPolygon(polygon,bufferSize);
+						polygon = expandPolygon(polygon,BufferSize);
 						Rectangle r = new Rectangle(0,0,exportParcel.getWidth(),exportParcel.getHeight());
 						Area wholeArea = new Area(r);
 						Area holeArea = new Area(polygon);
@@ -215,10 +215,10 @@ public class ParcelExporter {
 						g2d.draw(polygon);
 
 						Rectangle2D bound = polygon.getBounds2D();
-						int subMinX = Math.max((int) bound.getMinX() - borderSize, 1);
-						int subMinY = Math.max((int) bound.getMinY() - borderSize, 1);
-						int subMaxX = Math.min((int) bound.getMaxX() + borderSize, exportParcel.getWidth() - 1);
-						int subMaxY = Math.min((int) bound.getMaxY() + borderSize, exportParcel.getHeight() - 1);
+						int subMinX = Math.max((int) bound.getMinX() - BorderSize, 1);
+						int subMinY = Math.max((int) bound.getMinY() - BorderSize, 1);
+						int subMaxX = Math.min((int) bound.getMaxX() + BorderSize, exportParcel.getWidth() - 1);
+						int subMaxY = Math.min((int) bound.getMaxY() + BorderSize, exportParcel.getHeight() - 1);
 
 						exportParcel = exportParcel.getSubimage(subMinX, subMinY, subMaxX - subMinX, subMaxY - subMinY);
 					}
@@ -282,7 +282,7 @@ public class ParcelExporter {
 		Vector3D block = new Vector3D();
 		Vector3D pointInWorld = new Vector3D();
 		block.x = (int) point.getX();
-		block.y = seaLevel;
+		block.y = SeaLevel;
 		block.z = (int) point.getZ();
 		transform.transform(block, pointInWorld);
 

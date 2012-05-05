@@ -46,16 +46,14 @@ public class ParcelHistory extends Parcel{
 		@EnumValue("MODIFICATION")
 		MODIFICATION
 	}
-	/** The plugin. */
-	static LocalPlan plugin;
 	
 	/** The id. */
 	@Length(max = 200)
-	protected String id;
+	private String id;
 	
-	protected Date date;
+	private Date date;
 
-	protected historyTypes historyType = historyTypes.CREATION;
+	private historyTypes historyType = historyTypes.CREATION;
 
 	
 	/** The comment. */

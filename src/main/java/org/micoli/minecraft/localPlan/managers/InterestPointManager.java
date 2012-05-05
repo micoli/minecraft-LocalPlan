@@ -80,7 +80,7 @@ public class InterestPointManager {
 				if (!interestPoints.containsKey(marker.getWorld())) {
 					interestPoints.put(marker.getWorld(), new HashMap<String,InterestPoint>());
 				}
-				interestPoints.get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getMarkerSet(), marker.getLabel(), matcher.group().substring(1),new BlockVector2D( marker.getX(),marker.getZ())));
+				interestPoints.get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getLabel(), matcher.group().substring(1),new BlockVector2D( marker.getX(),marker.getZ())));
 				plugin.logger.log("Markers : %s ", marker.getLabel());
 			}
 		}
@@ -118,7 +118,7 @@ public class InterestPointManager {
 			throw new QDCommandException("Icon does not exists");
 		}
 		Marker marker = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).createMarker(poiName+"-"+String.format("%.2f",price), poiName+"-"+String.format("%.2f",price), player.getWorld().getName(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), markerIcon, true);
-		this.getInterestPoints().get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), marker.getMarkerSet(), poiName, String.format("%.2f",price),new BlockVector2D( marker.getX(),marker.getZ())));
+		this.getInterestPoints().get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), poiName, String.format("%.2f",price),new BlockVector2D( marker.getX(),marker.getZ())));
 		
 		plugin.sendComments(player, ChatFormater.format("POI %s is now is created %f", poiName, price));
 	}
