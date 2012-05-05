@@ -522,11 +522,11 @@ public class ParcelManager {
 			throw new QDCommandException("Parcel is not buyable");
 		}
 
-		if (parcel.getPrice() > plugin.getVaultEconomy().getBalance(player.getName())) {
-			throw new QDCommandException(ChatFormater.format("Not enough money to buy that parcel %f<%f", plugin.getVaultEconomy().getBalance(player.getName()), parcel.getPrice()));
+		if (parcel.getPrice() > PluginEnvironment.getVaultEconomy(plugin).getBalance(player.getName())) {
+			throw new QDCommandException(ChatFormater.format("Not enough money to buy that parcel %f<%f", PluginEnvironment.getVaultEconomy(plugin).getBalance(player.getName()), parcel.getPrice()));
 		}
-		plugin.getVaultEconomy().depositPlayer(parcel.getOwner(), parcel.getPrice());
-		plugin.getVaultEconomy().withdrawPlayer(player.getName(), parcel.getPrice());
+		PluginEnvironment.getVaultEconomy(plugin).depositPlayer(parcel.getOwner(), parcel.getPrice());
+		PluginEnvironment.getVaultEconomy(plugin).withdrawPlayer(player.getName(), parcel.getPrice());
 		allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName(),false);
 		new ParcelHistory(parcel,ParcelHistory.historyTypes.SALE,"",true);
 		plugin.sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
@@ -550,7 +550,7 @@ public class ParcelManager {
 			throw new QDCommandException("Parcel not found");
 		}
 
-		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.getVaultPermission().playerHas(player, "localPlan.members.allow"))) {
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || PluginEnvironment.getVaultPermission(plugin).playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		RegionManager regionManager = getRegionManager(parcel.getWorld());

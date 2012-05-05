@@ -58,7 +58,7 @@ public class PreviewBlockManager {
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found " + player.getWorld().toString() + "::" + parcelName);
 		}
-		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.getVaultPermission().playerHas(player, "localPlan.members.allow"))) {
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || PluginEnvironment.getVaultPermission(plugin).playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		if (previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {
@@ -112,7 +112,7 @@ public class PreviewBlockManager {
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found");
 		}
-		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || plugin.getVaultPermission().playerHas(player, "localPlan.members.allow"))) {
+		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || PluginEnvironment.getVaultPermission(plugin).playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
 		}
 		if (!previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {

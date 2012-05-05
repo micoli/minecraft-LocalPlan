@@ -1,6 +1,6 @@
 name: LocalPlan
 main: org.micoli.minecraft.localPlan.LocalPlan
-version: 0.2
+version: 0.2.1
 description: parcel management
 depend: [Vault,dynmap, WorldGuard,morgUtils]
 commands:
