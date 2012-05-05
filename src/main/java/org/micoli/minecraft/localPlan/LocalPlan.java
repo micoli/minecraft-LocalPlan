@@ -7,7 +7,6 @@ import java.util.List;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.dynmap.DynmapCommonAPI;
 import org.micoli.minecraft.bukkit.QDBukkitPlugin;
 import org.micoli.minecraft.bukkit.QDCommand;
 import org.micoli.minecraft.bukkit.QDCommand.SenderType;
@@ -18,14 +17,8 @@ import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
 import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
 import org.micoli.minecraft.localPlan.managers.InterestPointManager;
 import org.micoli.minecraft.localPlan.managers.LocalPlanCommandManager;
-import org.micoli.minecraft.localPlan.managers.ParcelExporter;
 import org.micoli.minecraft.localPlan.managers.ParcelManager;
 import org.micoli.minecraft.localPlan.managers.PreviewBlockManager;
-import org.micoli.minecraft.utils.PluginEnvironment;
-import org.micoli.minecraft.utils.Task;
-
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -39,15 +32,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The instance. */
 	private static LocalPlan instance;
 
-	/** The worldguard plugin. */
-	private WorldGuardPlugin worldGuardPlugin;
-
-	/** The worldedit plugin. */
-	private WorldEditPlugin worldEditPlugin;
-
-	/** The dynmap plugin. */
-	private DynmapCommonAPI dynmapPlugin;
-
 	/** The marker default price. */
 	private double markerDefaultPrice = 300;
 
@@ -56,9 +40,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 	/** The markerset name for POI. */
 	private String markersetName = "LocalPlanPOI";
-
-	/** The parcel exporter path. */
-	private String parcelExporterPath = "parcelImages";
 
 	/** The interest point manager. */
 	private InterestPointManager interestPointManager;
@@ -69,9 +50,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The preview block manager. */
 	private PreviewBlockManager previewBlockManager;
 	
-	/** The parcel exporter. */
-	private ParcelExporter parcelExporter;
-
 	/**
 	 * Gets the single instance of LocalPlan.
 	 * 
@@ -95,11 +73,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		super.onEnable();
 		logger.log("%s version enabled", this.pdfFile.getName(), this.pdfFile.getVersion());
 
-		worldGuardPlugin = PluginEnvironment.getWorldGuard(instance, getServer());
-		worldEditPlugin = PluginEnvironment.getWorldEdit(instance, getServer());
-
-		setDynmapPlugin((DynmapCommonAPI) getServer().getPluginManager().getPlugin("dynmap"));
-
 		configFile.set("PointOfInterest.defaultPrice", configFile.getDouble("PointOfInterest.defaultPrice", getMarkerDefaultPrice()));
 		setMarkerDefaultPrice(configFile.getDouble("PointOfInterest.defaultPrice"));
 
@@ -109,27 +82,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		configFile.set("PointOfInterest.markersetName", configFile.getString("PointOfInterest.markersetName", getMarkersetName()));
 		setMarkersetName(configFile.getString("PointOfInterest.markersetName"));
 
-		configFile.set("ParcelExporter.imagePath", configFile.getString("ParcelExporter.imagePath", getParcelExporterPath()));
-		setParcelExporterPath(configFile.getString("ParcelExporter.imagePath"));
-
 		saveConfig();
 
 		interestPointManager = new InterestPointManager(instance);
 		parcelManager = new ParcelManager(instance);
 		previewBlockManager = new PreviewBlockManager(instance);
-		parcelExporter = new ParcelExporter(instance);
-		
 		if (interestPointManager.initialize()) {
 			getParcelManager().initalizeRegions();
-			Task runningTask = new Task(this, this) {
-				public void run() {
-					parcelExporter.getMaps();
-				}
-			};
-			runningTask.startDelayed(25L);
-			
 		}
-
 		executor = new LocalPlanCommandManager(this, new Class[] { getClass() });
 	}
 
@@ -214,60 +174,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * Gets the dynmap plugin.
-	 *
-	 * @return the dynmapPlugin
-	 */
-	public DynmapCommonAPI getDynmapPlugin() {
-		return dynmapPlugin;
-	}
-
-	/**
-	 * Sets the dynmap plugin.
-	 *
-	 * @param dynmapPlugin the dynmapPlugin to set
-	 */
-	public void setDynmapPlugin(DynmapCommonAPI dynmapPlugin) {
-		this.dynmapPlugin = dynmapPlugin;
-	}
-
-	/**
-	 * Gets the world guard plugin.
-	 *
-	 * @return the worldGuardPlugin
-	 */
-	public WorldGuardPlugin getWorldGuardPlugin() {
-		return worldGuardPlugin;
-	}
-
-	/**
-	 * Sets the world guard plugin.
-	 *
-	 * @param worldGuardPlugin the worldGuardPlugin to set
-	 */
-	public void setWorldGuardPlugin(WorldGuardPlugin worldGuardPlugin) {
-		this.worldGuardPlugin = worldGuardPlugin;
-	}
-
-	/**
-	 * Gets the world edit plugin.
-	 *
-	 * @return the worldEditPlugin
-	 */
-	public WorldEditPlugin getWorldEditPlugin() {
-		return worldEditPlugin;
-	}
-
-	/**
-	 * Sets the world edit plugin.
-	 *
-	 * @param worldEditPlugin the worldEditPlugin to set
-	 */
-	public void setWorldEditPlugin(WorldEditPlugin worldEditPlugin) {
-		this.worldEditPlugin = worldEditPlugin;
-	}
-
-	/**
 	 * Gets the interest point manager.
 	 *
 	 * @return the interestPointManager
@@ -319,24 +225,6 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	public void setPreviewBlockManager(PreviewBlockManager previewBlockManager) {
 		this.previewBlockManager = previewBlockManager;
-	}
-
-	/**
-	 * Gets the parcel exporter path.
-	 *
-	 * @return the parcelExporterPath
-	 */
-	public String getParcelExporterPath() {
-		return parcelExporterPath;
-	}
-
-	/**
-	 * Sets the parcel exporter path.
-	 *
-	 * @param parcelExporterPath the parcelExporterPath to set
-	 */
-	public void setParcelExporterPath(String parcelExporterPath) {
-		this.parcelExporterPath = parcelExporterPath;
 	}
 
 	/**

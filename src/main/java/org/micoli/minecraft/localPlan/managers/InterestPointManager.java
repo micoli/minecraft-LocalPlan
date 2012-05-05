@@ -14,6 +14,7 @@ import org.micoli.minecraft.bukkit.QDCommandException;
 import org.micoli.minecraft.localPlan.LocalPlan;
 import org.micoli.minecraft.localPlan.entities.InterestPoint;
 import org.micoli.minecraft.utils.ChatFormater;
+import org.micoli.minecraft.utils.PluginEnvironment;
 
 import com.sk89q.worldedit.BlockVector2D;
 
@@ -65,11 +66,11 @@ public class InterestPointManager {
 
 		interestPoints = new HashMap<String, HashMap<String,InterestPoint>>();
 
-		MarkerSet localPlanMarkerSet = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName());
+		MarkerSet localPlanMarkerSet = PluginEnvironment.getDynmapCommonAPIPlugin(plugin).getMarkerAPI().getMarkerSet(plugin.getMarkersetName());
 		
 		if (localPlanMarkerSet == null){
 			plugin.logger.log("Adding Point Of Interest markerset :" + plugin.getMarkersetName());
-			localPlanMarkerSet = plugin.getDynmapPlugin().getMarkerAPI().createMarkerSet(plugin.getMarkersetName(), plugin.getMarkersetName(), null, true);
+			localPlanMarkerSet = PluginEnvironment.getDynmapCommonAPIPlugin(plugin).getMarkerAPI().createMarkerSet(plugin.getMarkersetName(), plugin.getMarkersetName(), null, true);
 		}
 
 		Iterator<Marker> localPlanMarkerSetIterator = localPlanMarkerSet.getMarkers().iterator();
@@ -102,7 +103,7 @@ public class InterestPointManager {
 		}
 		Marker existingMarker = null;
 		try {
-			existingMarker = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).findMarker(poiName);
+			existingMarker = PluginEnvironment.getDynmapCommonAPIPlugin(plugin).getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).findMarker(poiName);
 		} catch (Exception e) {
 		}
 		if (existingMarker!=null || getInterestPoints().get(player.getWorld().getName()).containsKey(poiName)){
@@ -113,11 +114,11 @@ public class InterestPointManager {
 			throw new QDCommandException("Price not found or not the good format 99.9");
 		}
 		double price = scanner.nextDouble();
-		MarkerIcon markerIcon = plugin.getDynmapPlugin().getMarkerAPI().getMarkerIcon(icon);
+		MarkerIcon markerIcon = PluginEnvironment.getDynmapCommonAPIPlugin(plugin).getMarkerAPI().getMarkerIcon(icon);
 		if(markerIcon == null){
 			throw new QDCommandException("Icon does not exists");
 		}
-		Marker marker = plugin.getDynmapPlugin().getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).createMarker(poiName+"-"+String.format("%.2f",price), poiName+"-"+String.format("%.2f",price), player.getWorld().getName(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), markerIcon, true);
+		Marker marker = PluginEnvironment.getDynmapCommonAPIPlugin(plugin).getMarkerAPI().getMarkerSet(plugin.getMarkersetName()).createMarker(poiName+"-"+String.format("%.2f",price), poiName+"-"+String.format("%.2f",price), player.getWorld().getName(), player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), markerIcon, true);
 		this.getInterestPoints().get(marker.getWorld()).put(marker.getLabel(),new InterestPoint(marker.getWorld(), poiName, String.format("%.2f",price),new BlockVector2D( marker.getX(),marker.getZ())));
 		
 		plugin.sendComments(player, ChatFormater.format("POI %s is now is created %f", poiName, price));

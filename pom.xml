@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.micoli.minecraft</groupId>
 	<artifactId>morg-LocalPlan</artifactId>
-	<version>0.1.1-SNAPSHOT</version>
+	<version>0.2.1-SNAPSHOT</version>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<ebean.version>2.4.0</ebean.version>
@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>org.micoli.minecraft</groupId>
 			<artifactId>morg-utils</artifactId>
-			<version>0.1.1-SNAPSHOT</version>
+			<version>0.5.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.milkbowl.vault</groupId>
@@ -72,11 +72,6 @@
 			<groupId>org.dynmap</groupId>
 			<artifactId>DynmapCore</artifactId>
 			<version>[0.36,)</version>
-		</dependency>
-		<dependency>
-			<groupId>com.vividsolutions</groupId>
-			<artifactId>jts</artifactId>
-			<version>1.12</version>
 		</dependency>
 	</dependencies>
 	<build>

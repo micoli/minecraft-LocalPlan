@@ -14,6 +14,7 @@ import org.micoli.minecraft.bukkit.QDCommandException;
 import org.micoli.minecraft.localPlan.LocalPlan;
 import org.micoli.minecraft.localPlan.entities.Parcel;
 import org.micoli.minecraft.utils.BlockUtils;
+import org.micoli.minecraft.utils.PluginEnvironment;
 
 import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -65,7 +66,7 @@ public class PreviewBlockManager {
 		}
 		List<Block> listBlock = new ArrayList<Block>();
 		previewBlocks.put(player.getWorld().getName() + "::" + parcel.getRegionId(), listBlock);
-		RegionManager mgr = plugin.getWorldGuardPlugin().getGlobalRegionManager().get(plugin.getServer().getWorld(parcel.getWorld()));
+		RegionManager mgr = PluginEnvironment.getWorldGuardPlugin(plugin).getGlobalRegionManager().get(plugin.getServer().getWorld(parcel.getWorld()));
 		ProtectedRegion region = mgr.getRegion(parcel.getRegionId());
 
 		int nb = 0;

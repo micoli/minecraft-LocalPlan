@@ -23,6 +23,7 @@ import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
 import org.micoli.minecraft.localPlan.entities.ParcelHistory;
 import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
+import org.micoli.minecraft.utils.PluginEnvironment;
 import org.micoli.minecraft.utils.StringUtils;
 
 import com.avaje.ebean.Expression;
@@ -239,7 +240,7 @@ public class ParcelManager {
 		World w = player.getWorld();
 		Vector pt = toVector(player.getLocation());
 
-		ApplicableRegionSet set = plugin.getWorldGuardPlugin().getRegionManager(w).getApplicableRegions(pt);
+		ApplicableRegionSet set = PluginEnvironment.getWorldGuardPlugin(plugin).getRegionManager(w).getApplicableRegions(pt);
 
 		plugin.logger.log("list %s %s", player.getName(), set.toString());
 		for (ProtectedRegion reg : set) {
@@ -272,14 +273,14 @@ public class ParcelManager {
 		}
 
 		// Attempt to get the player's selection from WorldEdit
-		Selection sel = plugin.getWorldEditPlugin().getSelection(player);
+		Selection sel = PluginEnvironment.getWorldEditPlugin(plugin).getSelection(player);
 
 		if (sel == null) {
 			throw new QDCommandException("Select a region with WorldEdit first.");
 		}
 
 		World w = sel.getWorld();
-		RegionManager mgr = plugin.getWorldGuardPlugin().getGlobalRegionManager().get(w);
+		RegionManager mgr = PluginEnvironment.getWorldGuardPlugin(plugin).getGlobalRegionManager().get(w);
 		if (mgr.hasRegion(parcelName)) {
 			throw new QDCommandException("That region is already defined. Use redefine instead.");
 		}
@@ -352,7 +353,7 @@ public class ParcelManager {
 	 * @author sk89q
 	 */
 	public <V> void setFlag(ProtectedRegion region, Flag<V> flag, CommandSender sender, String value) throws InvalidFlagFormat {
-		region.setFlag(flag, flag.parseInput(plugin.getWorldGuardPlugin(), sender, value));
+		region.setFlag(flag, flag.parseInput(PluginEnvironment.getWorldGuardPlugin(plugin), sender, value));
 	}
 
 	/**
@@ -399,7 +400,7 @@ public class ParcelManager {
 	 */
 	public void teleportToParcel(Player player, String parcelName) {
 		World w = player.getWorld();
-		RegionManager rm = plugin.getWorldGuardPlugin().getRegionManager(w);
+		RegionManager rm = PluginEnvironment.getWorldGuardPlugin(plugin).getRegionManager(w);
 		ProtectedRegion region = rm.getRegion(parcelName);
 		if (region != null) {
 			final BlockVector min = region.getMinimumPoint();
@@ -447,7 +448,7 @@ public class ParcelManager {
 	}
 
 	private RegionManager getRegionManager(String world){
-		return plugin.getWorldGuardPlugin().getGlobalRegionManager().get(plugin.getServer().getWorld(world));
+		return PluginEnvironment.getWorldGuardPlugin(plugin).getGlobalRegionManager().get(plugin.getServer().getWorld(world));
 	}
 	/**
 	 * Sets the buyable.
