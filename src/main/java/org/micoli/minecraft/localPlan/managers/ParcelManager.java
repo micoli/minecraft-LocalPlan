@@ -20,6 +20,7 @@ import org.micoli.minecraft.localPlan.LocalPlanUtils;
 import org.micoli.minecraft.localPlan.entities.Parcel;
 import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
 import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
+import org.micoli.minecraft.localPlan.entities.ParcelHistory;
 import org.micoli.minecraft.utils.BlockUtils;
 import org.micoli.minecraft.utils.ChatFormater;
 import org.micoli.minecraft.utils.StringUtils;
@@ -111,12 +112,14 @@ public class ParcelManager {
 					if (!listParcels.containsKey(worldName + "::" + pr.getId())) {
 						Parcel parcel = new Parcel(worldName, pr);
 						parcel.save();
+						new ParcelHistory(parcel,ParcelHistory.historyTypes.CREATION,"",true);
 						plugin.logger.log("Automatically adding %s::%s(%s)", worldName, pr.getId(), pr.getOwners().toPlayersString());
 					} else {
 						Parcel parcel = listParcels.get(worldName + "::" + pr.getId());
 						if (parcel.getSurface() != LocalPlanUtils.getRegionSurface(pr)) {
 							parcel.setPriceAndSurface(worldName, pr);
 							parcel.save();
+							new ParcelHistory(parcel,ParcelHistory.historyTypes.MODIFICATION,"",true);
 							plugin.logger.log("Updating surface of  %s::%s(%d)", worldName, pr.getId(), parcel.getSurface());
 						}
 					}
@@ -317,6 +320,7 @@ public class ParcelManager {
 			parcel.setPriceAndSurface(w.getName(), region);
 		}
 		parcel.save();
+		new ParcelHistory(parcel,ParcelHistory.historyTypes.CREATION,"",true);
 
 		try {
 			mgr.save();
@@ -415,7 +419,7 @@ public class ParcelManager {
 	 * @throws QDCommandException
 	 *             the qD command exception
 	 */
-	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner) throws QDCommandException {
+	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner,boolean standAlone) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(WorldId, parcelName);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found");
@@ -431,7 +435,10 @@ public class ParcelManager {
 		parcel.setOwner(newOwner);
 		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
-
+		
+		if(standAlone){
+			new ParcelHistory(parcel,ParcelHistory.historyTypes.ALLOCATION,"",true);
+		}
 		plugin.sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
 	}
 
@@ -460,6 +467,8 @@ public class ParcelManager {
 		parcel.setPrice(price);
 		parcel.setBuyStatus(Parcel.buyStatusTypes.BUYABLE);
 		parcel.save();
+		new ParcelHistory(parcel,ParcelHistory.historyTypes.SET_BUYABLE,"",true);
+		
 		plugin.sendComments(player, ChatFormater.format("Parcel %s is now buyable at the following price %f", parcelName, price));
 	}
 
@@ -480,6 +489,8 @@ public class ParcelManager {
 		}
 		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
+		new ParcelHistory(parcel,ParcelHistory.historyTypes.SET_UNBUYABLE,"",true);
+		
 		plugin.sendComments(player, ChatFormater.format("Parcel %s is now unbuyable ", parcelName));
 	}
 
@@ -508,7 +519,8 @@ public class ParcelManager {
 		}
 		plugin.getVaultEconomy().depositPlayer(parcel.getOwner(), parcel.getPrice());
 		plugin.getVaultEconomy().withdrawPlayer(player.getName(), parcel.getPrice());
-		allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName());
+		allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName(),false);
+		new ParcelHistory(parcel,ParcelHistory.historyTypes.SALE,"",true);
 		plugin.sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
 
 	}

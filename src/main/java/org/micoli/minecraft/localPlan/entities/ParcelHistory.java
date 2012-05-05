@@ -3,14 +3,12 @@ package org.micoli.minecraft.localPlan.entities;
 import java.util.Date;
 
 import javax.persistence.Entity;
-import javax.persistence.Id;
 import javax.persistence.Table;
 
 import org.micoli.minecraft.localPlan.LocalPlan;
 
 import com.avaje.ebean.annotation.EnumValue;
 import com.avaje.ebean.validation.Length;
-import com.avaje.ebean.validation.NotNull;
 
 /**
  * The Class Parcel.
@@ -21,7 +19,33 @@ import com.avaje.ebean.validation.NotNull;
 @Entity
 @Table(name = "mra_prh_parcel_history")
 public class ParcelHistory extends Parcel{
+	/**
+	 * The Enum buyStatusTypes.
+	 */
+	public enum historyTypes {
 
+		/** The ANY. */
+		@EnumValue("ANY")
+		ANY,
+
+		@EnumValue("ALLOCATION")
+		ALLOCATION,
+
+		@EnumValue("SALE")
+		SALE,
+
+		@EnumValue("CREATION")
+		CREATION,
+		
+		@EnumValue("SET_UNBUYABLE")
+		SET_UNBUYABLE,
+		
+		@EnumValue("SET_BUYABLE")
+		SET_BUYABLE, 
+		
+		@EnumValue("MODIFICATION")
+		MODIFICATION
+	}
 	/** The plugin. */
 	static LocalPlan plugin;
 	
@@ -29,16 +53,19 @@ public class ParcelHistory extends Parcel{
 	@Length(max = 200)
 	protected String id;
 	
-	public Date date;
+	protected Date date;
+
+	protected historyTypes historyType = historyTypes.CREATION;
+
 	
 	/** The comment. */
 	@Length(max = 200)
 	protected String comment;
 	
 	/**
-	 * Instantiates a new parcel.
+	 * Instantiates a new parcel history.
 	 */
-	public ParcelHistory(Parcel parcel) {
+	public ParcelHistory(Parcel parcel,historyTypes historyType,String comment,boolean autoSave) {
 		plugin = LocalPlan.getInstance();
 		this.setBuyStatus(parcel.getBuyStatus());
 		this.setDate(new Date());
@@ -49,6 +76,11 @@ public class ParcelHistory extends Parcel{
 		this.setOwnerType(parcel.getOwnerType());
 		this.setPrice(parcel.getPrice());
 		this.setSurface(parcel.getSurface());
+		this.setHistoryType(historyType);
+		this.setComment(comment);
+		if (autoSave){
+			this.save();
+		}
 	}
 
 	/**
@@ -91,6 +123,20 @@ public class ParcelHistory extends Parcel{
 	 */
 	public void setComment(String comment) {
 		this.comment = comment;
+	}
+
+	/**
+	 * @return the historyType
+	 */
+	public historyTypes getHistoryType() {
+		return historyType;
+	}
+
+	/**
+	 * @param historyType the historyType to set
+	 */
+	public void setHistoryType(historyTypes historyType) {
+		this.historyType = historyType;
 	}
 	
 }

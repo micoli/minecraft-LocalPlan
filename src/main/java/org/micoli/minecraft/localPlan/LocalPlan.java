@@ -563,7 +563,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		if (args.length != 3) {
 			throw new QDCommandUsageException("need 3 arguments");
 		}
-		getParcelManager().allocateParcel((Player) sender, ((Player) sender).getWorld().getName(), args[1], args[2]);
+		getParcelManager().allocateParcel((Player) sender, ((Player) sender).getWorld().getName(), args[1], args[2],true);
 	}
 
 	/**
