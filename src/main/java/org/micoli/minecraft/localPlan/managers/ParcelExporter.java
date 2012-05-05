@@ -222,7 +222,15 @@ public class ParcelExporter {
 
 						exportParcel = exportParcel.getSubimage(subMinX, subMinY, subMaxX - subMinX, subMaxY - subMinY);
 					}
-					Images.saveBufferedImage(exportParcel, String.format("%s/%s_%s.png", plugin.getDataFolder(), worldName, region.getId()),"png");
+					File exportImagePath = plugin.getDataFolder();
+					if (!exportImagePath.exists()) {
+						exportImagePath.mkdir();
+					}
+					exportImagePath = new File(plugin.getDataFolder(), plugin.getParcelExporterPath());
+					if (!exportImagePath.exists()) {
+						exportImagePath.mkdir();
+					}
+					Images.saveBufferedImage(exportParcel, String.format("%s/%s__%s.png", exportImagePath, worldName, region.getId()),"png");
 
 					plugin.logger.log(" %s(%d) => %d %d / %d %d / %d %d", region.getId(), mapTiles.length, minTileX * w, minTileY * h, maxTileX * w + w, maxTileY * h + h, sizex * w, sizey * h);
 					plugin.logger.log("-----------------");

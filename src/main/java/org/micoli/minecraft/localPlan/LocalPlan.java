@@ -56,6 +56,8 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	/** The markerset name for POI. */
 	private String markersetName = "LocalPlanPOI";
 
+	private String parcelExporterPath = "parcelImages";
+
 	/** The interest point manager. */
 	private InterestPointManager interestPointManager;
 	
@@ -104,6 +106,9 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 
 		configFile.set("PointOfInterest.markersetName", configFile.getString("PointOfInterest.markersetName", getMarkersetName()));
 		setMarkersetName(configFile.getString("PointOfInterest.markersetName"));
+
+		configFile.set("ParcelExporter.imagePath", configFile.getString("ParcelExporter.imagePath", getParcelExporterPath()));
+		setParcelExporterPath(configFile.getString("ParcelExporter.imagePath"));
 
 		saveConfig();
 
@@ -312,6 +317,20 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 */
 	public void setPreviewBlockManager(PreviewBlockManager previewBlockManager) {
 		this.previewBlockManager = previewBlockManager;
+	}
+
+	/**
+	 * @return the parcelExporterPath
+	 */
+	public String getParcelExporterPath() {
+		return parcelExporterPath;
+	}
+
+	/**
+	 * @param parcelExporterPath the parcelExporterPath to set
+	 */
+	public void setParcelExporterPath(String parcelExporterPath) {
+		this.parcelExporterPath = parcelExporterPath;
 	}
 
 	/**
