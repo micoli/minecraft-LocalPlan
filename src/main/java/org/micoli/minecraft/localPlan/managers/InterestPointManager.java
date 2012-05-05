@@ -17,14 +17,13 @@ import org.micoli.minecraft.utils.ChatFormater;
 
 import com.sk89q.worldedit.BlockVector2D;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class InterestPointManager.
  */
 public class InterestPointManager {
 	
 	/** The plugin. */
-	LocalPlan plugin;
+	private LocalPlan plugin;
 
 	/** The interest points. */
 	private HashMap<String, HashMap<String,InterestPoint>> interestPoints;
@@ -97,7 +96,7 @@ public class InterestPointManager {
 	 * @param priceString the price string
 	 * @throws Exception the exception
 	 */
-	public void addPOI(Player player, String poiName, String icon, String priceString) throws Exception {
+	public void addPOI(Player player, String poiName, String icon, String priceString) throws QDCommandException {
 		if (getInterestPoints().get(player.getWorld().getName())==null){
 			getInterestPoints().put(player.getWorld().getName(),new HashMap<String,InterestPoint>());
 		}

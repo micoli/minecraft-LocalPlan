@@ -19,7 +19,6 @@ import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class PreviewBlockManager.
  */
@@ -53,7 +52,7 @@ public class PreviewBlockManager {
  	 * @param parcelName the parcel name
  	 * @throws Exception the exception
  	 */
- 	public void showParcel(Player player, String parcelName) throws Exception {
+ 	public void showParcel(Player player, String parcelName) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found " + player.getWorld().toString() + "::" + parcelName);
@@ -107,7 +106,7 @@ public class PreviewBlockManager {
 	 * @param parcelName the parcel name
 	 * @throws Exception the exception
 	 */
-	public void hideParcel(Player player, String parcelName) throws Exception {
+	public void hideParcel(Player player, String parcelName) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found");

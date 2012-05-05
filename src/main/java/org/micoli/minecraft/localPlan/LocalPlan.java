@@ -340,7 +340,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * Cmd_comments on.
+	 * CmdComments on.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -352,12 +352,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "commentsOn", permissions = {}, usage = "", description = "enable plugin comments")
-	public void cmd_commentsOn(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdCommentsOn(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, true);
 	}
 
 	/**
-	 * Cmd_comments off.
+	 * CmdComments off.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -369,12 +369,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "commentsOff", permissions = {}, usage = "", description = "disabled plugin comments")
-	public void cmd_commentsOff(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdCommentsOff(CommandSender sender, Command command, String label, String[] args) {
 		setComments((Player) sender, false);
 	}
 
 	/**
-	 * Cmd_list.
+	 * CmdList.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -388,7 +388,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "list", permissions = { "localplan.list" }, usage = "[<player>]", description = "list all parcel belonging to a given player, if no player given then use the current player",senderType=SenderType.BOTH)
-	public void cmd_list(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdList(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		if (args.length == 1) {
 			getParcelManager().listParcels((Player) sender, ((Player) sender).getName(), buyStatusTypes.ANY, ownerTypes.ANY);
 		} else {
@@ -401,7 +401,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * Cmd_listall.
+	 * CmdListall.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -413,12 +413,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "listall", permissions = { "localplan.listall" }, usage = "", description = "list all parcels")
-	public void cmd_listall(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdListall(CommandSender sender, Command command, String label, String[] args) {
 		getParcelManager().listParcels((Player) sender, "__all__", buyStatusTypes.ANY, ownerTypes.ANY);
 	}
 
 	/**
-	 * Cmd_listavailable.
+	 * CmdListavailable.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -430,12 +430,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "listavailable", permissions = { "localplan.listavailable" }, usage = "", description = "list all parcels with no owner")
-	public void cmd_listavailable(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdListavailable(CommandSender sender, Command command, String label, String[] args) {
 		getParcelManager().listParcels((Player) sender, "", buyStatusTypes.ANY, ownerTypes.ANY);
 	}
 
 	/**
-	 * Cmd_listbuyable.
+	 * CmdListbuyable.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -447,12 +447,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "listbuyable", permissions = { "localplan.listbuyable" }, usage = "", description = "list all buyable parcels")
-	public void cmd_listbuyable(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdListbuyable(CommandSender sender, Command command, String label, String[] args) {
 		getParcelManager().listParcels((Player) sender, "__all__", buyStatusTypes.BUYABLE, ownerTypes.ANY);
 	}
 
 	/**
-	 * Cmd_buyable.
+	 * CmdBuyable.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -466,12 +466,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "buyable", permissions = { "localplan.setbuyable" }, usage = "<parcelName> <price>", description = "put a parcel on the market, set it as buyable to the given price")
-	public void cmd_buyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdBuyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getParcelManager().setBuyable((Player) sender, args[1], args[2]);
 	}
 
 	/**
-	 * Cmd_unbuyable.
+	 * CmdUnbuyable.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -485,12 +485,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "unbuyable", permissions = { "localplan.setunbuyable" }, usage = "<parcelName>", description = "set a parcel unbuyable, disallow to buy it")
-	public void cmd_unbuyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdUnbuyable(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getParcelManager().setUnbuyable((Player) sender, args[1]);
 	}
 
 	/**
-	 * Cmd_buy.
+	 * CmdBuy.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -504,12 +504,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "buy", permissions = { "localplan.buy" }, usage = "<parcelName>", description = "buy a parcel if it is buyable, use economy")
-	public void cmd_buy(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdBuy(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getParcelManager().buyParcel((Player) sender, args[1]);
 	}
 
 	/**
-	 * Cmd_tp.
+	 * CmdTp.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -521,12 +521,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "tp", permissions = { "localplan.teleport" }, usage = "<parcelName>", description = "Teleport the player to the center of the parcel")
-	public void cmd_tp(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdTp(CommandSender sender, Command command, String label, String[] args) {
 		getParcelManager().teleportToParcel((Player) sender, args[1]);
 	}
 
 	/**
-	 * Cmd_create.
+	 * CmdCreate.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -540,12 +540,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "create", permissions = { "localplan.create" }, usage = "<parcelName>", description = "define a region and the parcel affected to it, no owner attributed to STATE")
-	public void cmd_create(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdCreate(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getParcelManager().createParcel((Player) sender, args[1]);
 	}
 
 	/**
-	 * Cmd_allocate.
+	 * CmdAllocate.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -559,7 +559,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the qD command exception
 	 */
 	@QDCommand(aliases = "allocate", permissions = { "localplan.allocate" }, usage = "<parcelName> <newOwner>", description = "allocate a parcel to an owner without economy")
-	public void cmd_allocate(CommandSender sender, Command command, String label, String[] args) throws QDCommandException {
+	public void cmdAllocate(CommandSender sender, Command command, String label, String[] args) throws QDCommandException {
 		if (args.length != 3) {
 			throw new QDCommandUsageException("need 3 arguments");
 		}
@@ -567,7 +567,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
-	 * Cmd_member.
+	 * CmdMember.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -581,12 +581,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "member", permissions = { "localplan.member.set" }, usage = "<memberName>", description = "change the member of a parcel")
-	public void cmd_member(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdMember(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getParcelManager().manageParcelMember((Player) sender, args);
 	}
 
 	/**
-	 * Cmd_show.
+	 * CmdShow.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -600,12 +600,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "show", permissions = { "localplan.show" }, usage = "<parcelName>", description = "show the border of a parcel in fence")
-	public void cmd_show(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdShow(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getPreviewBlockManager().showParcel((Player) sender, args[1]);
 	}
 
 	/**
-	 * Cmd_hide.
+	 * CmdHide.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -619,12 +619,12 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *             the exception
 	 */
 	@QDCommand(aliases = "hide", permissions = { "localplan.hide" }, usage = "<parcelName>", description = "hide the border of a parcel")
-	public void cmd_hide(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdHide(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		getPreviewBlockManager().hideParcel((Player) sender, args[1]);
 	}
 
 	/**
-	 * Cmd_scan.
+	 * CmdScan.
 	 * 
 	 * @param sender
 	 *            the sender
@@ -636,14 +636,14 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 *            the args
 	 */
 	@QDCommand(aliases = "scan", permissions = { "localplan.scan" }, usage = "", description = "rescan region and add parcels")
-	public void cmd_scan(CommandSender sender, Command command, String label, String[] args) {
+	public void cmdScan(CommandSender sender, Command command, String label, String[] args) {
 		if (getInterestPointManager().initialize()) {
 			getParcelManager().initalizeRegions();
 		}
 	}
 
 	/**
-	 * Cmd_POI.
+	 * CmdPOI.
 	 *
 	 * @param sender the sender
 	 * @param command the command
@@ -652,7 +652,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	 * @throws Exception the exception
 	 */
 	@QDCommand(aliases = "poi", permissions = { "localplan.poi" }, usage = "<POIname> <icon> <price>", description = "manage Point of Interest")
-	public void cmd_POI(CommandSender sender, Command command, String label, String[] args) throws Exception {
+	public void cmdPOI(CommandSender sender, Command command, String label, String[] args) throws Exception {
 		if (args.length != 4) {
 			throw new QDCommandUsageException("need 3 arguments");
 		}

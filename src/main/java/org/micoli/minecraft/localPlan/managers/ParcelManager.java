@@ -44,17 +44,26 @@ import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class ParcelManager.
  */
 public class ParcelManager {
 
 	/** The plugin. */
-	LocalPlan plugin;
+	private LocalPlan plugin;
 	/** The internal array of parcels. */
 	private Map<String, Parcel> aParcel;
 
+	/**
+	 * Instantiates a new parcel manager.
+	 *
+	 * @param instance the instance
+	 */
+	public ParcelManager(LocalPlan instance) {
+		this.plugin = instance;
+		aParcel = new HashMap<String, Parcel>();
+	}
+	
 	/**
 	 * @return the aParcel
 	 */
@@ -69,15 +78,6 @@ public class ParcelManager {
 		this.aParcel = aParcel;
 	}
 
-	/**
-	 * Instantiates a new parcel manager.
-	 *
-	 * @param instance the instance
-	 */
-	public ParcelManager(LocalPlan instance) {
-		this.plugin = instance;
-		aParcel = new HashMap<String, Parcel>();
-	}
 
 	/**
 	 * Initalize regions.
@@ -92,8 +92,9 @@ public class ParcelManager {
 			plugin.logger.log("Map %s (%d)", worldName, listParcels.size());
 
 			RegionManager rm = plugin.getWorldGuardPlugin().getRegionManager(w);
-			if (rm == null)
+			if (rm == null){
 				continue;
+			}
 
 			Map<String, ProtectedRegion> regions = rm.getRegions();
 			for (ProtectedRegion pr : regions.values()) {
@@ -169,7 +170,6 @@ public class ParcelManager {
 			ownerTypeArg = "%";
 		}
 
-		// todo revoir l'ordre des resultats pour les alignements
 		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).ne("ownerType", Parcel.ownerTypes.SYSTEM.toString()).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
 		ArrayList<String> bigStr = new ArrayList<String>();
 		String oldWorld = "";
@@ -258,8 +258,12 @@ public class ParcelManager {
 	 *            the parcel name
 	 * @throws Exception
 	 *             the exception
+	 *             
+	 *  code is from wordlguard plugin, need to be interfaced/reimplemented
 	 */
-	public void createParcel(Player player, String parcelName) throws Exception {
+	public void createParcel(Player player, String parcelName) throws QDCommandException {
+		
+		
 		if (!ProtectedRegion.isValidId(parcelName)) {
 			throw new QDCommandException("Invalid region ID specified!");
 		}
@@ -454,7 +458,7 @@ public class ParcelManager {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public void setBuyable(Player player, String parcelName, String priceString) throws Exception {
+	public void setBuyable(Player player, String parcelName, String priceString) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found or doesn't belong to you");
@@ -482,7 +486,7 @@ public class ParcelManager {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public void setUnbuyable(Player player, String parcelName) throws Exception {
+	public void setUnbuyable(Player player, String parcelName) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found or doesn't belong to you");
@@ -504,7 +508,7 @@ public class ParcelManager {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public void buyParcel(Player player, String parcelName) throws Exception {
+	public void buyParcel(Player player, String parcelName) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found");
@@ -535,7 +539,7 @@ public class ParcelManager {
 	 * @throws Exception
 	 *             the exception
 	 */
-	public void manageParcelMember(Player player, String[] args) throws Exception {
+	public void manageParcelMember(Player player, String[] args) throws QDCommandException {
 		String parcelName = args[1];
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
 		if (parcel == null) {
