@@ -1,1 +1,5 @@
 target
+
+target/classes/org/micoli/minecraft/localPlan/LocalPlan.class
+
+target/classes/org/micoli/minecraft/localPlan/entities/Parcel.class
