@@ -174,6 +174,13 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	}
 
 	/**
+	 * Get All the parcels.
+	 */
+	public List<Parcel> getAllParcel() {
+		return Parcel.getAllParcels();
+	}
+
+	/**
 	 * Gets the interest point manager.
 	 *
 	 * @return the interestPointManager

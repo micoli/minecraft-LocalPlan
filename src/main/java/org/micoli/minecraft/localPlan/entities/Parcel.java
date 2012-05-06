@@ -1,10 +1,12 @@
 package org.micoli.minecraft.localPlan.entities;
 
 import java.util.Iterator;
+import java.util.List;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.bukkit.entity.Player;
 import org.micoli.minecraft.localPlan.LocalPlan;
@@ -27,7 +29,7 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 public class Parcel {
 
 	/** The plugin. */
-	static LocalPlan plugin;
+	transient static LocalPlan plugin;
 
 	/**
 	 * The Enum buyStatusTypes.
@@ -191,6 +193,20 @@ public class Parcel {
 		plugin.logger.log("===>%s %d,%f", region.getId(), surf, calcPrice);
 		this.setPrice(Math.round(calcPrice));
 		this.setSurface(surf);
+	}
+
+	/**
+	 * @return the plugin
+	 */
+	public static LocalPlan getPlugin() {
+		return plugin;
+	}
+
+	/**
+	 * @param plugin the plugin to set
+	 */
+	public static void setPlugin(LocalPlan plugin) {
+		Parcel.plugin = plugin;
 	}
 
 	/**
@@ -417,6 +433,13 @@ public class Parcel {
 	 */
 	public static Parcel getParcel(String world, String parcelName, Player player) {
 		return plugin.getStaticDatabase().find(Parcel.class).where().eq("world", world).eq("regionId", parcelName).eq("owner", player.getName()).findUnique();
+	}
+	/**
+	 * Get all the parcel.
+	 * 
+	 */
+	public static List<Parcel> getAllParcels() {
+		return plugin.getStaticDatabase().find(Parcel.class).findList();
 	}
 
 	/**

@@ -2,6 +2,7 @@ package org.micoli.minecraft.localPlan.managers;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,14 +28,14 @@ public class InterestPointManager {
 	private LocalPlan plugin;
 
 	/** The interest points. */
-	private HashMap<String, HashMap<String,InterestPoint>> interestPoints;
+	private Map<String, Map<String,InterestPoint>> interestPoints;
 
 	/**
 	 * Gets the interest points.
 	 *
 	 * @return the interestPoints
 	 */
-	public HashMap<String, HashMap<String, InterestPoint>> getInterestPoints() {
+	public Map<String, Map<String, InterestPoint>> getInterestPoints() {
 		return interestPoints;
 	}
 	
@@ -43,7 +44,7 @@ public class InterestPointManager {
 	 *
 	 * @param interestPoints the interestPoints to set
 	 */
-	public void setInterestPoints(HashMap<String, HashMap<String, InterestPoint>> interestPoints) {
+	public void setInterestPoints(Map<String, Map<String, InterestPoint>> interestPoints) {
 		this.interestPoints = interestPoints;
 	}
 	
@@ -64,7 +65,7 @@ public class InterestPointManager {
 	public boolean initialize(){
 		Pattern pattern = Pattern.compile("-(\\d+(\\.\\d+)?)$");
 
-		interestPoints = new HashMap<String, HashMap<String,InterestPoint>>();
+		interestPoints = new HashMap<String, Map<String,InterestPoint>>();
 
 		MarkerSet localPlanMarkerSet = PluginEnvironment.getDynmapCommonAPIPlugin(plugin).getMarkerAPI().getMarkerSet(plugin.getMarkersetName());
 		
