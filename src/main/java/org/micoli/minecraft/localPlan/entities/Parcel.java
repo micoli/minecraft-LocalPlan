@@ -6,7 +6,6 @@ import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import org.bukkit.entity.Player;
 import org.micoli.minecraft.localPlan.LocalPlan;
