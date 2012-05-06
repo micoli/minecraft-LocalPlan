@@ -15,6 +15,7 @@ import org.micoli.minecraft.bukkit.QDCommandUsageException;
 import org.micoli.minecraft.localPlan.entities.Parcel;
 import org.micoli.minecraft.localPlan.entities.Parcel.buyStatusTypes;
 import org.micoli.minecraft.localPlan.entities.Parcel.ownerTypes;
+import org.micoli.minecraft.localPlan.entities.ParcelHistory;
 import org.micoli.minecraft.localPlan.managers.InterestPointManager;
 import org.micoli.minecraft.localPlan.managers.LocalPlanCommandManager;
 import org.micoli.minecraft.localPlan.managers.ParcelManager;
@@ -103,6 +104,7 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 	protected java.util.List<Class<?>> getDatabaseORMClasses() {
 		List<Class<?>> list = new ArrayList<Class<?>>();
 		list.add(Parcel.class);
+		list.add(ParcelHistory.class);
 		return list;
 	};
 
