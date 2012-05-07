@@ -170,7 +170,7 @@ public class ParcelManager {
 			ownerTypeArg = "%";
 		}
 
-		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).ne("ownerType", Parcel.ownerTypes.SYSTEM.toString()).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("id desc").findList().iterator();
+		Iterator<Parcel> parcelIterator = plugin.getStaticDatabase().find(Parcel.class).where().like("owner", ownerArg).ne("ownerType", Parcel.ownerTypes.SYSTEM.toString()).like("buyStatus", buyStatusArg).like("ownerType", ownerTypeArg).orderBy("buyStatus asc,id desc").findList().iterator();
 		ArrayList<String> bigStr = new ArrayList<String>();
 		String oldWorld = "";
 		String oldBuyStateColorString = "";
@@ -424,7 +424,7 @@ public class ParcelManager {
 	 * @throws QDCommandException
 	 *             the qD command exception
 	 */
-	public void allocateParcel(Player player, String WorldId, String parcelName, String newOwner,boolean standAlone) throws QDCommandException {
+	public Parcel allocateParcel(Player player, String WorldId, String parcelName, String newOwner,boolean standAlone) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(WorldId, parcelName);
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found");
@@ -445,6 +445,7 @@ public class ParcelManager {
 			new ParcelHistory(parcel,ParcelHistory.historyTypes.ALLOCATION,"",true);
 		}
 		plugin.sendComments(player, ChatFormater.format("Allocation of %s to %s done", parcelName, newOwner));
+		return parcel;
 	}
 
 	private RegionManager getRegionManager(String world){
@@ -527,7 +528,7 @@ public class ParcelManager {
 		}
 		PluginEnvironment.getVaultEconomy(plugin).depositPlayer(parcel.getOwner(), parcel.getPrice());
 		PluginEnvironment.getVaultEconomy(plugin).withdrawPlayer(player.getName(), parcel.getPrice());
-		allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName(),false);
+		parcel = allocateParcel(player, player.getWorld().getName(), parcelName, player.getDisplayName(),false);
 		new ParcelHistory(parcel,ParcelHistory.historyTypes.SALE,"",true);
 		plugin.sendComments(player, ChatFormater.format("Parcel %s bought ", parcelName));
 

@@ -93,7 +93,11 @@ public class LocalPlan extends QDBukkitPlugin implements ActionListener {
 		}
 		executor = new LocalPlanCommandManager(this, new Class[] { getClass() });
 	}
-
+	@Override
+	public void onDisable() {
+		previewBlockManager.hideAllParcelsShown();
+		super.onDisable();
+	}
 	/*
 	 * 
 	 * @see org.micoli.minecraft.bukkit.QDBukkitPlugin#getDatabaseORMClasses()

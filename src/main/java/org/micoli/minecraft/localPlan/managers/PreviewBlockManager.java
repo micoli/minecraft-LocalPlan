@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,6 +22,7 @@ import com.sk89q.worldedit.BlockVector2D;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class PreviewBlockManager.
  */
@@ -51,12 +54,12 @@ public class PreviewBlockManager {
  	 *
  	 * @param player the player
  	 * @param parcelName the parcel name
- 	 * @throws Exception the exception
+ 	 * @throws QDCommandException the qD command exception
  	 */
  	public void showParcel(Player player, String parcelName) throws QDCommandException {
-		Parcel parcel = Parcel.getParcel(player.getWorld().toString(), parcelName);
+		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
 		if (parcel == null) {
-			throw new QDCommandException("Parcel not found " + player.getWorld().toString() + "::" + parcelName);
+			throw new QDCommandException("Parcel not found " + player.getWorld().getName() + "::" + parcelName);
 		}
 		if (!(parcel.getOwner().equalsIgnoreCase(player.getName()) || PluginEnvironment.getVaultPermission(plugin).playerHas(player, "localPlan.members.allow"))) {
 			throw new QDCommandException("You don't have right on that Parcel");
@@ -105,7 +108,7 @@ public class PreviewBlockManager {
 	 *
 	 * @param player the player
 	 * @param parcelName the parcel name
-	 * @throws Exception the exception
+	 * @throws QDCommandException the qD command exception
 	 */
 	public void hideParcel(Player player, String parcelName) throws QDCommandException {
 		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
@@ -118,15 +121,41 @@ public class PreviewBlockManager {
 		if (!previewBlocks.containsKey(player.getWorld().getName() + "::" + parcel.getRegionId())) {
 			throw new QDCommandException("Parcel preview already shown");
 		}
-		World world = plugin.getServer().getWorld(parcel.getWorld());
-		List<Block> listBlock = previewBlocks.get(player.getWorld().getName() + "::" + parcel.getRegionId());
+		hideOneParcel(parcel.getWorld(),parcel.getRegionId());
+
+		previewBlocks.remove(parcel.getWorld() + "::" + parcel.getRegionId());
+		plugin.sendComments(player, "Parcel hidden");
+	}
+	
+	/**
+	 * Hide one parcel.
+	 *
+	 * @param worldId the world id
+	 * @param regionId the region id
+	 */
+	public void hideOneParcel(String worldId, String regionId){
+		World world = plugin.getServer().getWorld(worldId);
+		List<Block> listBlock = previewBlocks.get(worldId + "::" + regionId);
 		for (Iterator<Block> pointIterator = listBlock.iterator(); pointIterator.hasNext();) {
 			Block block = pointIterator.next();
 			world.getBlockAt(block.getLocation()).setTypeId(0);
 		}
-
-		previewBlocks.remove(player.getWorld().getName() + "::" + parcel.getRegionId());
-		plugin.sendComments(player, "Parcel hidden");
+		previewBlocks.remove(worldId + "::" + regionId);
+	}
+	
+	/**
+	 * Hide all parcels shown.
+	 */
+	public void hideAllParcelsShown(){
+		plugin.logger.log("Auto hidding parcels shown");
+		Pattern pattern = Pattern.compile("(.*)::(.*)");
+		for(String key : previewBlocks.keySet()){
+			Matcher matcher = pattern.matcher(key);
+			if (matcher.matches()) {
+				plugin.logger.log("auto hide shown parcel "+ matcher.group(1)+"::"+matcher.group(2));
+				hideOneParcel(matcher.group(1),matcher.group(2));
+			}
+		}
 	}
 
 }

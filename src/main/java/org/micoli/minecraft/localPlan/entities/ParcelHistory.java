@@ -121,6 +121,8 @@ public class ParcelHistory{
 		this.setOwner(parcel.getOwner());
 		this.setOwnerType(parcel.getOwnerType());
 		this.setPrice(parcel.getPrice());
+		this.setPointOfInterest(parcel.getPointOfInterest());
+		this.setDistToPointOfInterest(parcel.getDistToPointOfInterest());
 		this.setSurface(parcel.getSurface());
 		this.setHistoryType(historyType);
 		this.setComment(comment);
