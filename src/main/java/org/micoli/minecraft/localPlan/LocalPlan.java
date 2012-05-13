@@ -21,7 +21,22 @@ import org.micoli.minecraft.localPlan.managers.LocalPlanCommandManager;
 import org.micoli.minecraft.localPlan.managers.ParcelManager;
 import org.micoli.minecraft.localPlan.managers.PreviewBlockManager;
 
-// TODO: Auto-generated Javadoc
+/*- localplan.list 
+- localplan.listall 
+- localplan.listavailable 
+- localplan.listbuyable 
+- localplan.setbuyable 
+- localplan.setunbuyable 
+- localplan.buy 
+- localplan.teleport 
+- localplan.show 
+- localplan.hide 
+- localplan.member.set 
+- localplan.create 
+- localplan.allocate 
+- localplan.scan 
+- localplan.poi 
+*/
 /**
  * The Class LocalPlan.
  */

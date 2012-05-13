@@ -315,7 +315,7 @@ public class ParcelManager {
 		own.addPlayer(player.getName());
 		region.setOwners(own);
 		
-		setRegionFlag(player, region, "CONSTRUCT", "allow");
+		setRegionFlag(player, region, "CONSTRUCT", "MEMBERS");
 
 		mgr.addRegion(region);
 		Parcel parcel = Parcel.getParcel(w.getName(), parcelName);
