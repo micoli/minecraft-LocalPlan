@@ -464,7 +464,12 @@ public class ParcelManager {
 	 *             the exception
 	 */
 	public void setBuyable(Player player, String parcelName, String priceString) throws QDCommandException {
-		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
+		Parcel parcel = null;
+		if(player.isOp()){
+			parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
+		}else{
+			parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
+		}
 		if (parcel == null) {
 			throw new QDCommandException("Parcel not found or doesn't belong to you");
 		}
@@ -492,9 +497,11 @@ public class ParcelManager {
 	 *             the exception
 	 */
 	public void setUnbuyable(Player player, String parcelName) throws QDCommandException {
-		Parcel parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
-		if (parcel == null) {
-			throw new QDCommandException("Parcel not found or doesn't belong to you");
+		Parcel parcel = null;
+		if(player.isOp()){
+			parcel = Parcel.getParcel(player.getWorld().getName(), parcelName);
+		}else{
+			parcel = Parcel.getParcel(player.getWorld().getName(), parcelName, player);
 		}
 		parcel.setBuyStatus(Parcel.buyStatusTypes.UNBUYABLE);
 		parcel.save();
@@ -580,6 +587,5 @@ public class ParcelManager {
 		}else{
 			throw new QDCommandException("SubCommand is not valid");
 		}
-			
 	}
 }
